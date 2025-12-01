@@ -21,6 +21,7 @@ const uploadRoutes = require('./routes/upload');
 const adminRoutes = require('./routes/admin');
 const qrRoutes = require('./routes/qr');
 const exportRoutes = require('./routes/export');
+const seedRoutes = require('./routes/seed');
 
 const app = express();
 const server = http.createServer(app);
@@ -76,6 +77,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/qr', qrRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/seed', seedRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
