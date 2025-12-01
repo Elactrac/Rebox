@@ -1,0 +1,310 @@
+// Prisma Schema for ReBox
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// User roles: INDIVIDUAL, BUSINESS, RECYCLER, ADMIN
+enum UserRole {
+  INDIVIDUAL
+  BUSINESS
+  RECYCLER
+  ADMIN
+}
+
+enum PackageType {
+  BOX
+  BOTTLE
+  CONTAINER
+  BAG
+  OTHER
+}
+
+enum PackageCondition {
+  EXCELLENT
+  GOOD
+  FAIR
+  POOR
+}
+
+enum PackageStatus {
+  LISTED
+  SCHEDULED
+  PICKED_UP
+  PROCESSING
+  RECYCLED
+  REUSED
+}
+
+enum PickupStatus {
+  PENDING
+  CONFIRMED
+  IN_TRANSIT
+  COMPLETED
+  CANCELLED
+}
+
+enum TransactionType {
+  PICKUP_REWARD
+  REFERRAL_BONUS
+  BRAND_BUYBACK
+  REDEMPTION
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String?   // Optional for OAuth users
+  name          String
+  phone         String?
+  role          UserRole  @default(INDIVIDUAL)
+  avatar        String?
+  isVerified    Boolean   @default(false)
+  verifyToken   String?
+  verifyExpires DateTime?
+  resetToken    String?
+  resetExpires  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // OAuth fields
+  provider      String?   // google, facebook, etc.
+  providerId    String?   // ID from OAuth provider
+  providerData  Json?     // Additional data from provider
+
+  // Address
+  address       String?
+  city          String?
+  state         String?
+  zipCode       String?
+  country       String?   @default("USA")
+  latitude      Float?
+  longitude     Float?
+
+  // Business specific
+  companyName   String?
+  businessType  String?
+  taxId         String?
+
+  // Relations
+  packages      Package[]
+  pickupsAsUser Pickup[]    @relation("UserPickups")
+  pickupsAsRecycler Pickup[] @relation("RecyclerPickups")
+  rewards       Reward?
+  transactions  Transaction[]
+  impactStats   ImpactStats?
+  notifications Notification[]
+  buybackOffers BuybackOffer[]  @relation("BrandOffers")
+  acceptedOffers BuybackOffer[] @relation("AcceptedOffers")
+
+  @@index([email])
+  @@index([role])
+  @@index([provider, providerId])
+}
+
+model Package {
+  id            String          @id @default(cuid())
+  userId        String
+  type          PackageType
+  condition     PackageCondition
+  status        PackageStatus   @default(LISTED)
+  
+  // Package details
+  brand         String?
+  description   String?
+  quantity      Int             @default(1)
+  weight        Float?          // in kg
+  dimensions    String?         // LxWxH
+  images        String[]
+  
+  // Pricing
+  estimatedValue Float          @default(0)
+  actualValue   Float?
+  
+  // Environmental impact
+  co2Saved      Float?          // kg of CO2
+  waterSaved    Float?          // liters
+  
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  // Relations
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pickupItems   PickupItem[]
+  buybackOffers BuybackOffer[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([type])
+}
+
+model Pickup {
+  id              String        @id @default(cuid())
+  userId          String
+  recyclerId      String?
+  status          PickupStatus  @default(PENDING)
+  
+  // Schedule
+  scheduledDate   DateTime
+  scheduledSlot   String        // e.g., "9AM-12PM"
+  actualPickupTime DateTime?
+  
+  // Location
+  address         String
+  city            String
+  state           String
+  zipCode         String
+  latitude        Float?
+  longitude       Float?
+  instructions    String?
+  
+  // Totals
+  totalItems      Int           @default(0)
+  totalWeight     Float?
+  totalValue      Float         @default(0)
+  rewardPoints    Int           @default(0)
+  
+  // Tracking
+  trackingCode    String?       @unique
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  completedAt     DateTime?
+
+  // Relations
+  user            User          @relation("UserPickups", fields: [userId], references: [id], onDelete: Cascade)
+  recycler        User?         @relation("RecyclerPickups", fields: [recyclerId], references: [id])
+  items           PickupItem[]
+  transaction     Transaction?
+
+  @@index([userId])
+  @@index([recyclerId])
+  @@index([status])
+  @@index([scheduledDate])
+}
+
+model PickupItem {
+  id          String    @id @default(cuid())
+  pickupId    String
+  packageId   String
+  quantity    Int       @default(1)
+  
+  pickup      Pickup    @relation(fields: [pickupId], references: [id], onDelete: Cascade)
+  package     Package   @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@unique([pickupId, packageId])
+}
+
+model Reward {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  totalPoints     Int       @default(0)
+  availablePoints Int       @default(0)
+  lifetimePoints  Int       @default(0)
+  level           String    @default("Bronze")
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Transaction {
+  id          String          @id @default(cuid())
+  userId      String
+  pickupId    String?         @unique
+  type        TransactionType
+  points      Int
+  amount      Float?          // monetary value if applicable
+  description String?
+  
+  createdAt   DateTime        @default(now())
+
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pickup      Pickup?         @relation(fields: [pickupId], references: [id])
+
+  @@index([userId])
+  @@index([type])
+}
+
+model ImpactStats {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  
+  // Environmental metrics
+  totalPackages   Int       @default(0)
+  totalWeight     Float     @default(0)  // kg
+  co2Saved        Float     @default(0)  // kg
+  waterSaved      Float     @default(0)  // liters
+  treesEquivalent Float     @default(0)
+  landfillDiverted Float    @default(0) // kg
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model BuybackOffer {
+  id              String    @id @default(cuid())
+  brandId         String
+  packageId       String
+  offeredPrice    Float
+  status          String    @default("PENDING") // PENDING, ACCEPTED, REJECTED, COMPLETED
+  acceptedById    String?
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  expiresAt       DateTime?
+
+  brand           User      @relation("BrandOffers", fields: [brandId], references: [id], onDelete: Cascade)
+  package         Package   @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  acceptedBy      User?     @relation("AcceptedOffers", fields: [acceptedById], references: [id])
+
+  @@index([brandId])
+  @@index([packageId])
+}
+
+model Notification {
+  id          String    @id @default(cuid())
+  userId      String
+  title       String
+  message     String
+  type        String    // PICKUP, REWARD, OFFER, SYSTEM
+  isRead      Boolean   @default(false)
+  data        Json?
+  
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+// System-wide sustainability report data
+model SustainabilityReport {
+  id              String    @id @default(cuid())
+  period          String    // e.g., "2024-Q1"
+  
+  totalUsers      Int
+  totalPackages   Int
+  totalPickups    Int
+  totalCO2Saved   Float
+  totalWaterSaved Float
+  totalLandfillDiverted Float
+  
+  topBrands       Json?
+  topRecyclers    Json?
+  regionalData    Json?
+  
+  createdAt       DateTime  @default(now())
+
+  @@unique([period])
+}
