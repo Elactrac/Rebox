@@ -67,6 +67,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Skip external API requests (let them go through normally)
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
   // API requests - network first, cache fallback
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(networkFirst(request));
