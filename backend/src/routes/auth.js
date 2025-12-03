@@ -357,11 +357,8 @@ router.post('/login', loginLimiter, loginValidation, async (req, res) => {
     // Use shared Prisma instance
     const prisma = req.prisma;
     
-    console.log('[LOGIN] Starting login attempt for:', req.body.email);
-    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.log('[LOGIN] Validation errors:', errors.array());
       return res.status(400).json({ 
         success: false, 
         errors: errors.array() 
@@ -369,7 +366,6 @@ router.post('/login', loginLimiter, loginValidation, async (req, res) => {
     }
 
     const { email, password } = req.body;
-    console.log('[LOGIN] Finding user:', email);
     
     // Find user
     const user = await prisma.user.findUnique({
@@ -381,18 +377,14 @@ router.post('/login', loginLimiter, loginValidation, async (req, res) => {
     });
 
     if (!user) {
-      console.log('[LOGIN] User not found:', email);
       return res.status(401).json({ 
         success: false, 
         message: 'Invalid credentials' 
       });
     }
 
-    console.log('[LOGIN] User found:', user.id, 'has password:', !!user.password);
-
     // Check if user has a password (OAuth users might not)
     if (!user.password) {
-      console.log('[LOGIN] User has no password (OAuth user)');
       return res.status(401).json({ 
         success: false, 
         message: 'This account uses OAuth login. Please sign in with Google.' 
@@ -400,35 +392,25 @@ router.post('/login', loginLimiter, loginValidation, async (req, res) => {
     }
 
     // Check password
-    console.log('[LOGIN] Comparing password...');
     const isMatch = await bcrypt.compare(password, user.password);
-    console.log('[LOGIN] Password match result:', isMatch);
     
     if (!isMatch) {
-      console.log('[LOGIN] Password mismatch');
       return res.status(401).json({ 
         success: false, 
         message: 'Invalid credentials' 
       });
     }
     
-    console.log('[LOGIN] Password matched, generating token...');
-    console.log('[LOGIN] User ID:', user.id);
-
     const token = generateToken(user.id);
-    console.log('[LOGIN] Token generated successfully');
 
     // Remove password from response
-    console.log('[LOGIN] Preparing response data...');
     const { password: _, resetToken, resetExpires, verifyToken, verifyExpires, ...userWithoutSensitive } = user;
-    console.log('[LOGIN] Response data prepared, sending...');
 
     res.json({
       success: true,
       message: 'Login successful',
       data: { user: userWithoutSensitive, token }
     });
-    console.log('[LOGIN] Login successful!');
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ 
@@ -445,9 +427,32 @@ router.post('/login', loginLimiter, loginValidation, async (req, res) => {
 router.get('/me', authenticate, async (req, res) => {
   const prisma = req.prisma;
   try {
+    // Fetch user with all needed data in one query (authenticate middleware only stores userId)
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
-      include: {
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        phone: true,
+        role: true,
+        avatar: true,
+        isVerified: true,
+        createdAt: true,
+        updatedAt: true,
+        provider: true,
+        providerId: true,
+        providerData: true,
+        address: true,
+        city: true,
+        state: true,
+        zipCode: true,
+        country: true,
+        latitude: true,
+        longitude: true,
+        companyName: true,
+        businessType: true,
+        taxId: true,
         rewards: true,
         impactStats: true
       }
@@ -460,11 +465,9 @@ router.get('/me', authenticate, async (req, res) => {
       });
     }
 
-    const { password: _, resetToken, resetExpires, verifyToken, verifyExpires, ...userWithoutSensitive } = user;
-
     res.json({
       success: true,
-      data: userWithoutSensitive
+      data: user
     });
   } catch (error) {
     console.error('Get user error:', error);

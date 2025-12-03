@@ -21,14 +21,13 @@ const authenticate = async (req, res, next) => {
     
     // Use shared Prisma instance from req
     const prisma = req.prisma;
+    
+    // Optimized: Only fetch essential fields (id + role for authorization)
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: {
         id: true,
-        email: true,
-        name: true,
-        role: true,
-        isVerified: true
+        role: true
       }
     });
 
