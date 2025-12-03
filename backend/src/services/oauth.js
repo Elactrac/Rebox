@@ -84,8 +84,15 @@ const verifyGoogleCode = async (code, redirectUri) => {
       },
     };
   } catch (error) {
-    console.error('Google code verification error:', error);
-    throw new Error('Failed to verify Google authorization code');
+    console.error('Google code verification error:', {
+      message: error.message,
+      code: error.code,
+      response: error.response?.data,
+      redirectUri,
+      hasClientId: !!process.env.GOOGLE_CLIENT_ID,
+      hasClientSecret: !!process.env.GOOGLE_CLIENT_SECRET
+    });
+    throw new Error(`Failed to verify Google authorization code: ${error.message}`);
   }
 };
 

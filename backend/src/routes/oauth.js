@@ -60,9 +60,11 @@ router.get('/config', (req, res) => {
 // @access  Public
 router.get('/google/url', (req, res) => {
   try {
+    // Use primary production URL (FRONTEND_URL may have multiple URLs for CORS)
+    const frontendUrl = process.env.FRONTEND_URL?.split(',')[0]?.trim() || 'http://localhost:3000';
     const redirectUri =
       req.query.redirect_uri ||
-      `${process.env.FRONTEND_URL || 'http://localhost:3000'}/oauth/callback/google`;
+      `${frontendUrl}/oauth/callback/google`;
 
     const state = generateState();
 
@@ -231,13 +233,21 @@ router.post('/google/code', async (req, res) => {
       // Continue even if state doesn't match - Google verification is sufficient
     }
 
-    // Determine redirect URI
+    // Determine redirect URI - use primary production URL
+    const frontendUrl = process.env.FRONTEND_URL?.split(',')[0]?.trim() || 'http://localhost:3000';
     const redirectUri =
       req.body.redirect_uri ||
-      `${process.env.FRONTEND_URL || 'http://localhost:3000'}/oauth/callback/google`;
+      `${frontendUrl}/oauth/callback/google`;
 
     // Verify the Google code
+    console.log('🔍 Verifying Google code with:', {
+      codeLength: code.length,
+      redirectUri,
+      hasClientId: !!process.env.GOOGLE_CLIENT_ID,
+      hasClientSecret: !!process.env.GOOGLE_CLIENT_SECRET
+    });
     const googleUser = await verifyGoogleCode(code, redirectUri);
+    console.log('✅ Google user verified:', { email: googleUser.email, name: googleUser.name });
 
     // Find or create user
     let user = await prisma.user.findFirst({
