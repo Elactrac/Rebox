@@ -692,15 +692,18 @@ const sendEmail = async (to, template, data) => {
   const emailContent = templates[template](...data);
   
   try {
+    // Gmail requires "From" to match authenticated user, but we can set a display name
+    const fromAddress = process.env.EMAIL_FROM || `"ReBox" <${process.env.SMTP_USER}>`;
+    
     console.log(`📧 Attempting to send email:`, {
       to,
       template,
       subject: emailContent.subject,
-      from: process.env.EMAIL_FROM || '"ReBox" <noreply@rebox.com>'
+      from: fromAddress
     });
     
     const info = await transporter.sendMail({
-      from: process.env.EMAIL_FROM || '"ReBox" <noreply@rebox.com>',
+      from: fromAddress,
       to,
       subject: emailContent.subject,
       text: emailContent.text,
