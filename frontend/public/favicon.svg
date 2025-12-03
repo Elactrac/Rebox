@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10B981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="48" fill="url(#grad)"/>
+  
+  <!-- Box icon representing ReBox -->
+  <g fill="white">
+    <!-- Top of box -->
+    <path d="M 30 35 L 50 25 L 70 35 L 50 45 Z" opacity="0.9"/>
+    <!-- Left side -->
+    <path d="M 30 35 L 30 60 L 50 70 L 50 45 Z" opacity="0.7"/>
+    <!-- Right side -->
+    <path d="M 70 35 L 70 60 L 50 70 L 50 45 Z" opacity="0.5"/>
+    <!-- Recycling arrow accent -->
+    <circle cx="50" cy="52" r="8" fill="none" stroke="white" stroke-width="2" opacity="0.8"/>
+    <path d="M 50 44 L 53 47 L 50 50" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.8"/>
+  </g>
+</svg>
