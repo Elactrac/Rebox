@@ -1,16 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Home = () => {
   const { user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [statsVisible, setStatsVisible] = useState(false);
+
+  // Handle scroll for navbar effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Animate stats on scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setStatsVisible(true);
+          }
+        });
+      },
+      { threshold: 0.3 }
+    );
+
+    const statsSection = document.getElementById('stats-section');
+    if (statsSection) {
+      observer.observe(statsSection);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-[#f6f8f6]">
       <div className="flex h-full grow flex-col">
         {/* TopNavBar */}
-        <header className="sticky top-0 z-50 flex items-center justify-center border-b border-solid border-b-gray-200/50 bg-[#f6f8f6]/80 backdrop-blur-sm px-4">
+        <header className={`sticky top-0 z-50 flex items-center justify-center border-b border-solid border-b-gray-200/50 backdrop-blur-sm px-4 transition-all duration-300 ${scrolled ? 'bg-white/95 shadow-md' : 'bg-[#f6f8f6]/80'}`}>
           <div className="flex items-center justify-between whitespace-nowrap w-full max-w-6xl px-4 py-3">
             <div className="flex items-center gap-4 text-gray-900">
               <div className="w-6 h-6 text-[#13ec13]">
@@ -115,21 +147,47 @@ const Home = () => {
               <div>
                 <div>
                   <div 
-                    className="flex min-h-[480px] flex-col gap-6 bg-cover bg-center bg-no-repeat rounded-xl items-start justify-end px-4 pb-10 md:px-10 md:gap-8"
+                    className="relative flex min-h-[480px] md:min-h-[600px] flex-col gap-6 bg-cover bg-center bg-no-repeat rounded-xl items-start justify-end px-4 pb-10 md:px-10 md:gap-8 overflow-hidden group"
                     style={{
                       backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.4) 100%), url("https://lh3.googleusercontent.com/aida-public/AB6AXuDUsN7x1L2jgL3seZSQSDSYBeR5b8w1Xy8yVJYx-uBE-1wNjWfzVrJteSwJgTEy6A31ikInCuKFkCPWdsmb2BsAxIpv12FZmGT7Xr7VxZhhGMX4lWjWj79w6SNQ1N3JEtOp7fK7ryDLmzXzv12us42mz2BBDMslUpCfBVIpuXgrn_3nikxHq7f9WRv1780aRbq_vBI-WEE69NJ6OuOq0cj0nLW_A2dQkJ7VRp2FykXBmX6qpBq0jI3CO-TnbrthHTlFail6plOD0q-0")`
                     }}
                   >
-                    <div className="flex flex-col gap-2 text-left">
-                      <h1 className="text-white text-4xl font-black leading-tight tracking-[-0.033em] md:text-5xl">Give Your Packaging a Second Life</h1>
-                      <h2 className="text-white text-sm font-normal leading-normal md:text-base">Connect with local businesses to recycle and reuse your used packaging, earn rewards, and help the planet.</h2>
+                    {/* Animated background overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                    
+                    {/* Floating icons animation */}
+                    <div className="absolute top-10 right-10 text-white/20 animate-bounce" style={{ animationDelay: '0s', animationDuration: '3s' }}>
+                      <span className="material-symbols-outlined text-6xl">package_2</span>
                     </div>
-                    <div className="flex-wrap gap-3 flex">
-                      <Link to={user ? "/packages/new" : "/register"} className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 md:h-12 md:px-5 bg-[#13ec13] text-gray-900 text-sm font-bold leading-normal tracking-[0.015em] md:text-base">
-                        <span className="truncate">List Your Used Boxes</span>
+                    <div className="absolute top-32 right-32 text-white/20 animate-bounce" style={{ animationDelay: '1s', animationDuration: '4s' }}>
+                      <span className="material-symbols-outlined text-5xl">recycling</span>
+                    </div>
+                    <div className="absolute top-20 left-20 text-white/20 animate-bounce hidden md:block" style={{ animationDelay: '2s', animationDuration: '3.5s' }}>
+                      <span className="material-symbols-outlined text-5xl">eco</span>
+                    </div>
+
+                    <div className="flex flex-col gap-2 text-left z-10 animate-fade-in-up">
+                      <h1 className="text-white text-4xl font-black leading-tight tracking-[-0.033em] md:text-5xl lg:text-6xl transform transition-all duration-500 hover:scale-105">
+                        Give Your Packaging a Second Life
+                      </h1>
+                      <h2 className="text-white text-sm font-normal leading-normal md:text-base lg:text-lg max-w-2xl opacity-95">
+                        Connect with local businesses to recycle and reuse your used packaging, earn rewards, and help the planet.
+                      </h2>
+                    </div>
+                    <div className="flex-wrap gap-3 flex z-10 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+                      <Link 
+                        to={user ? "/packages/new" : "/register"} 
+                        className="group/btn flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 md:h-12 md:px-5 bg-[#13ec13] text-gray-900 text-sm font-bold leading-normal tracking-[0.015em] md:text-base transform transition-all duration-300 hover:scale-105 hover:shadow-lg hover:bg-[#10d010] active:scale-95"
+                      >
+                        <span className="truncate group-hover/btn:translate-x-[-2px] transition-transform duration-300">List Your Used Boxes</span>
+                        <span className="material-symbols-outlined ml-1 opacity-0 group-hover/btn:opacity-100 group-hover/btn:translate-x-1 transition-all duration-300 text-lg">arrow_forward</span>
                       </Link>
-                      <Link to={user ? "/marketplace" : "/login"} className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 md:h-12 md:px-5 bg-gray-100 text-gray-900 text-sm font-bold leading-normal tracking-[0.015em] md:text-base">
-                        <span className="truncate">Source Sustainable Packaging</span>
+                      <Link 
+                        to={user ? "/marketplace" : "/login"} 
+                        className="group/btn flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 md:h-12 md:px-5 bg-gray-100 text-gray-900 text-sm font-bold leading-normal tracking-[0.015em] md:text-base transform transition-all duration-300 hover:scale-105 hover:shadow-lg hover:bg-white active:scale-95"
+                      >
+                        <span className="truncate group-hover/btn:translate-x-[-2px] transition-transform duration-300">Source Sustainable Packaging</span>
+                        <span className="material-symbols-outlined ml-1 opacity-0 group-hover/btn:opacity-100 group-hover/btn:translate-x-1 transition-all duration-300 text-lg">arrow_forward</span>
                       </Link>
                     </div>
                   </div>
@@ -148,24 +206,30 @@ const Home = () => {
                   <p className="text-gray-700 text-base font-normal leading-normal max-w-[720px]">Getting started with ReBox is easy. Follow these three simple steps to join the circular economy and make a positive impact.</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-0">
-                  <div className="flex flex-1 gap-4 rounded-xl border border-gray-200 bg-white p-6 flex-col">
-                    <div className="text-[#13ec13]"><span className="material-symbols-outlined text-4xl">package_2</span></div>
+                  <div className="group flex flex-1 gap-4 rounded-xl border border-gray-200 bg-white p-6 flex-col transform transition-all duration-300 hover:scale-105 hover:shadow-xl hover:border-[#13ec13] cursor-pointer">
+                    <div className="text-[#13ec13] transform transition-all duration-500 group-hover:scale-110 group-hover:rotate-6">
+                      <span className="material-symbols-outlined text-4xl">package_2</span>
+                    </div>
                     <div className="flex flex-col gap-1">
-                      <h2 className="text-gray-900 text-base font-bold leading-tight">1. List Your Boxes</h2>
+                      <h2 className="text-gray-900 text-base font-bold leading-tight group-hover:text-[#13ec13] transition-colors">1. List Your Boxes</h2>
                       <p className="text-gray-600 text-sm font-normal leading-normal">Quickly post details about your available, clean packaging materials on our platform.</p>
                     </div>
                   </div>
-                  <div className="flex flex-1 gap-4 rounded-xl border border-gray-200 bg-white p-6 flex-col">
-                    <div className="text-[#13ec13]"><span className="material-symbols-outlined text-4xl">group</span></div>
+                  <div className="group flex flex-1 gap-4 rounded-xl border border-gray-200 bg-white p-6 flex-col transform transition-all duration-300 hover:scale-105 hover:shadow-xl hover:border-[#13ec13] cursor-pointer" style={{ animationDelay: '0.1s' }}>
+                    <div className="text-[#13ec13] transform transition-all duration-500 group-hover:scale-110 group-hover:rotate-6">
+                      <span className="material-symbols-outlined text-4xl">group</span>
+                    </div>
                     <div className="flex flex-col gap-1">
-                      <h2 className="text-gray-900 text-base font-bold leading-tight">2. Get Matched</h2>
+                      <h2 className="text-gray-900 text-base font-bold leading-tight group-hover:text-[#13ec13] transition-colors">2. Get Matched</h2>
                       <p className="text-gray-600 text-sm font-normal leading-normal">Our system connects you with local businesses and individuals who need your specific types of boxes.</p>
                     </div>
                   </div>
-                  <div className="flex flex-1 gap-4 rounded-xl border border-gray-200 bg-white p-6 flex-col">
-                    <div className="text-[#13ec13]"><span className="material-symbols-outlined text-4xl">recycling</span></div>
+                  <div className="group flex flex-1 gap-4 rounded-xl border border-gray-200 bg-white p-6 flex-col transform transition-all duration-300 hover:scale-105 hover:shadow-xl hover:border-[#13ec13] cursor-pointer" style={{ animationDelay: '0.2s' }}>
+                    <div className="text-[#13ec13] transform transition-all duration-500 group-hover:scale-110 group-hover:rotate-6">
+                      <span className="material-symbols-outlined text-4xl">recycling</span>
+                    </div>
                     <div className="flex flex-col gap-1">
-                      <h2 className="text-gray-900 text-base font-bold leading-tight">3. Earn &amp; Recycle</h2>
+                      <h2 className="text-gray-900 text-base font-bold leading-tight group-hover:text-[#13ec13] transition-colors">3. Earn &amp; Recycle</h2>
                       <p className="text-gray-600 text-sm font-normal leading-normal">Arrange a pickup or drop-off, earn rewards for your contribution, and track your environmental impact.</p>
                     </div>
                   </div>
@@ -184,43 +248,51 @@ const Home = () => {
                   <p className="text-gray-700 text-base font-normal leading-normal max-w-[720px]">Whether you're clearing out clutter or sourcing supplies, ReBox makes sustainability simple and rewarding.</p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <div className="flex flex-col gap-3 pb-3">
+                  <div className="group flex flex-col gap-3 pb-3 cursor-pointer">
                     <div 
-                      className="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-lg"
+                      className="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-lg transform transition-all duration-500 group-hover:scale-105 group-hover:shadow-2xl overflow-hidden"
                       style={{backgroundImage: `url("https://lh3.googleusercontent.com/aida-public/AB6AXuDLOuxbvr-cNxG9fhRGgOIY7gtYa8aJuvWTDDmPSmrwq7k7HZYdJc1a6PyjNnB5V1klFCE5xLobB0ouO-mmBcyoCt7xPNO6sH6OES_pehEtKdDzjSAoN9_68YZt8CmnJHmS1hX3Iia7JX7_rnip_0CK1QLKj_CegXinN6GZoFSzjMcRsEifWJgP3rkXRe8tMmdy1J8eAMepMjEDnKeo2HogZ8nGwMgsBCgPnAUwgur3lg5kmS5cK_Q5gzuEnZTUgN2I4ysuXv1uXybP")`}}
-                    ></div>
-                    <div>
-                      <p className="text-gray-900 text-base font-medium leading-normal">Earn Rewards</p>
+                    >
+                      <div className="w-full h-full bg-gradient-to-t from-[#13ec13]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    </div>
+                    <div className="transform transition-all duration-300 group-hover:translate-x-2">
+                      <p className="text-gray-900 text-base font-medium leading-normal group-hover:text-[#13ec13] transition-colors">Earn Rewards</p>
                       <p className="text-gray-600 text-sm font-normal leading-normal">Get rewarded for your eco-friendly actions every time your packaging is claimed.</p>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-3 pb-3">
+                  <div className="group flex flex-col gap-3 pb-3 cursor-pointer">
                     <div 
-                      className="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-lg"
+                      className="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-lg transform transition-all duration-500 group-hover:scale-105 group-hover:shadow-2xl overflow-hidden"
                       style={{backgroundImage: `url("https://lh3.googleusercontent.com/aida-public/AB6AXuBl_jOIMjj4uLCZLc-dT9UUPek25WELyK2JPyRGe2QKg51v18qR2yhPaPyG3j-4mkay2yuK-hJJbHf70iaq_V0qO5TQo4R9ii3tKtblgv3lP2ZmWwT3BRsNgkecY-qbLe2NXH9HcRtzMtsBSvutE5cwM4fKyOHumJ0H4vzGjNXvNw4ACBpIMJmYtllsIeXvIZ70DSd8FuNgd0TtS77wE6qa_H_QAGKCQXqOaq9HBps6_DBCheK-6LNkzI16LqsXNxMwzihkAyO8MZt3")`}}
-                    ></div>
-                    <div>
-                      <p className="text-gray-900 text-base font-medium leading-normal">Reduce Waste</p>
+                    >
+                      <div className="w-full h-full bg-gradient-to-t from-[#13ec13]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    </div>
+                    <div className="transform transition-all duration-300 group-hover:translate-x-2">
+                      <p className="text-gray-900 text-base font-medium leading-normal group-hover:text-[#13ec13] transition-colors">Reduce Waste</p>
                       <p className="text-gray-600 text-sm font-normal leading-normal">Divert packaging from landfills and contribute to a healthier planet with every box.</p>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-3 pb-3">
+                  <div className="group flex flex-col gap-3 pb-3 cursor-pointer">
                     <div 
-                      className="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-lg"
+                      className="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-lg transform transition-all duration-500 group-hover:scale-105 group-hover:shadow-2xl overflow-hidden"
                       style={{backgroundImage: `url("https://lh3.googleusercontent.com/aida-public/AB6AXuCLvsGWNf4R2opj4VWqywNqqpcY2yyLDRw8t9ewIrQwoj5qJryZyvx2xH6kP_B0x96CZhWSDyJ5vifRsemloWKBVwJo1-F_Tgja88gWYYJDw63BeDsj7DFSRLZdmk8PnlFhpPoEXkOa3e1U9gRrLc2MeXY7IGRQE_7mIpgiHUCmyNmRbe9f8UwixnAoo6ndLmpeIiosE-EtxrTM0Y_vuOLBK5LxnRnLJTTEh_imtuhkIQcOpXJIcXjo_XLLGoKqhtHGPEqRdzDjztDK")`}}
-                    ></div>
-                    <div>
-                      <p className="text-gray-900 text-base font-medium leading-normal">Find Supplies</p>
+                    >
+                      <div className="w-full h-full bg-gradient-to-t from-[#13ec13]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    </div>
+                    <div className="transform transition-all duration-300 group-hover:translate-x-2">
+                      <p className="text-gray-900 text-base font-medium leading-normal group-hover:text-[#13ec13] transition-colors">Find Supplies</p>
                       <p className="text-gray-600 text-sm font-normal leading-normal">Access affordable, sustainable packaging materials for your business needs.</p>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-3 pb-3">
+                  <div className="group flex flex-col gap-3 pb-3 cursor-pointer">
                     <div 
-                      className="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-lg"
+                      className="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-lg transform transition-all duration-500 group-hover:scale-105 group-hover:shadow-2xl overflow-hidden"
                       style={{backgroundImage: `url("https://lh3.googleusercontent.com/aida-public/AB6AXuBymferJxTNfQmU3QdPcRSTs9qRL5JbFzhVNYUR9vsmcpuSIaORc6NsnYWXPrX-nevFVScB5cxnQQN362HGk0Wm1brz5KFYKOTclL1QSR5c6S8mcsN5hs1AUNfORzzO-S_U4BJQfGDyFlzuRLjIYl1-ZmpzXnYB8VDfY1WYFInql9mDr1pEsuIorSf4SBBglVUn-MOHNNtpdiqpHxAXDFFTlGXdsvVp4OAzobMZKz__tWsoq7DwMTZdcKex74atmY4SxBR2s0RbviJ5")`}}
-                    ></div>
-                    <div>
-                      <p className="text-gray-900 text-base font-medium leading-normal">Track Your Impact</p>
+                    >
+                      <div className="w-full h-full bg-gradient-to-t from-[#13ec13]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    </div>
+                    <div className="transform transition-all duration-300 group-hover:translate-x-2">
+                      <p className="text-gray-900 text-base font-medium leading-normal group-hover:text-[#13ec13] transition-colors">Track Your Impact</p>
                       <p className="text-gray-600 text-sm font-normal leading-normal">See real-time data on how your contributions are making a positive environmental difference.</p>
                     </div>
                   </div>
@@ -237,51 +309,53 @@ const Home = () => {
                   <h1 className="text-gray-900 tracking-light text-[32px] font-bold leading-tight md:text-4xl md:font-black md:tracking-[-0.033em] max-w-[720px]">For Everyone in the Loop</h1>
                   <p className="text-gray-700 text-base font-normal leading-normal max-w-[720px]">ReBox offers unique benefits whether you're giving packaging a new home or looking for sustainable materials.</p>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="flex flex-col gap-6 p-8 rounded-xl bg-white border border-gray-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8" id="stats-section">
+                  <div className="group flex flex-col gap-6 p-8 rounded-xl bg-white border border-gray-200 transform transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:border-[#13ec13]">
                     <div className="flex items-center gap-4">
-                      <div className="bg-[#13ec13]/20 p-3 rounded-full text-[#13ec13]">
+                      <div className="bg-[#13ec13]/20 p-3 rounded-full text-[#13ec13] transform transition-all duration-500 group-hover:scale-110 group-hover:rotate-12">
                         <span className="material-symbols-outlined">move_to_inbox</span>
                       </div>
-                      <h3 className="text-2xl font-bold text-gray-900">For Disposers</h3>
+                      <h3 className="text-2xl font-bold text-gray-900 group-hover:text-[#13ec13] transition-colors">For Disposers</h3>
                     </div>
                     <p className="text-gray-600">Turn your waste into a resource. Free up space, help the environment, and get rewarded for your used packaging.</p>
                     <ul className="space-y-3 text-gray-700">
-                      <li className="flex items-center gap-2">
+                      <li className="flex items-center gap-2 transform transition-all duration-300 group-hover:translate-x-2">
                         <span className="material-symbols-outlined text-[#13ec13]">check_circle</span> Declutter your home or business.
                       </li>
-                      <li className="flex items-center gap-2">
+                      <li className="flex items-center gap-2 transform transition-all duration-300 group-hover:translate-x-2" style={{ transitionDelay: '0.05s' }}>
                         <span className="material-symbols-outlined text-[#13ec13]">check_circle</span> Earn points and rewards.
                       </li>
-                      <li className="flex items-center gap-2">
+                      <li className="flex items-center gap-2 transform transition-all duration-300 group-hover:translate-x-2" style={{ transitionDelay: '0.1s' }}>
                         <span className="material-symbols-outlined text-[#13ec13]">check_circle</span> Reduce your carbon footprint.
                       </li>
                     </ul>
-                    <Link to={user ? "/packages/new" : "/register"} className="mt-auto flex w-fit cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-[#13ec13] text-gray-900 text-base font-bold leading-normal tracking-[0.015em]">
-                      <span className="truncate">Start Listing Now</span>
+                    <Link to={user ? "/packages/new" : "/register"} className="group/btn mt-auto flex w-fit cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-[#13ec13] text-gray-900 text-base font-bold leading-normal tracking-[0.015em] transform transition-all duration-300 hover:bg-[#10d010] hover:shadow-lg hover:scale-105">
+                      <span className="truncate group-hover/btn:translate-x-[-2px] transition-transform duration-300">Start Listing Now</span>
+                      <span className="material-symbols-outlined ml-1 opacity-0 group-hover/btn:opacity-100 group-hover/btn:translate-x-1 transition-all duration-300">arrow_forward</span>
                     </Link>
                   </div>
-                  <div className="flex flex-col gap-6 p-8 rounded-xl bg-white border border-gray-200">
+                  <div className="group flex flex-col gap-6 p-8 rounded-xl bg-white border border-gray-200 transform transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:border-[#13ec13]">
                     <div className="flex items-center gap-4">
-                      <div className="bg-[#13ec13]/20 p-3 rounded-full text-[#13ec13]">
+                      <div className="bg-[#13ec13]/20 p-3 rounded-full text-[#13ec13] transform transition-all duration-500 group-hover:scale-110 group-hover:rotate-12">
                         <span className="material-symbols-outlined">storefront</span>
                       </div>
-                      <h3 className="text-2xl font-bold text-gray-900">For Acquirers</h3>
+                      <h3 className="text-2xl font-bold text-gray-900 group-hover:text-[#13ec13] transition-colors">For Acquirers</h3>
                     </div>
                     <p className="text-gray-600">Source affordable, eco-friendly packaging from your local community. Perfect for small businesses, movers, and online sellers.</p>
                     <ul className="space-y-3 text-gray-700">
-                      <li className="flex items-center gap-2">
+                      <li className="flex items-center gap-2 transform transition-all duration-300 group-hover:translate-x-2">
                         <span className="material-symbols-outlined text-[#13ec13]">check_circle</span> Lower your supply costs.
                       </li>
-                      <li className="flex items-center gap-2">
+                      <li className="flex items-center gap-2 transform transition-all duration-300 group-hover:translate-x-2" style={{ transitionDelay: '0.05s' }}>
                         <span className="material-symbols-outlined text-[#13ec13]">check_circle</span> Enhance your brand's green credentials.
                       </li>
-                      <li className="flex items-center gap-2">
+                      <li className="flex items-center gap-2 transform transition-all duration-300 group-hover:translate-x-2" style={{ transitionDelay: '0.1s' }}>
                         <span className="material-symbols-outlined text-[#13ec13]">check_circle</span> Support the local circular economy.
                       </li>
                     </ul>
-                    <Link to={user ? "/marketplace" : "/login"} className="mt-auto flex w-fit cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-gray-200 text-gray-900 text-base font-bold leading-normal tracking-[0.015em]">
-                      <span className="truncate">Find Packaging Today</span>
+                    <Link to={user ? "/marketplace" : "/login"} className="group/btn mt-auto flex w-fit cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-gray-200 text-gray-900 text-base font-bold leading-normal tracking-[0.015em] transform transition-all duration-300 hover:bg-gray-300 hover:shadow-lg hover:scale-105">
+                      <span className="truncate group-hover/btn:translate-x-[-2px] transition-transform duration-300">Find Packaging Today</span>
+                      <span className="material-symbols-outlined ml-1 opacity-0 group-hover/btn:opacity-100 group-hover/btn:translate-x-1 transition-all duration-300">arrow_forward</span>
                     </Link>
                   </div>
                 </div>
