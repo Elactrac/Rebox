@@ -3,7 +3,6 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { body, validationResult } = require('express-validator');
-const { PrismaClient } = require('@prisma/client');
 const { authenticate } = require('../middleware/auth');
 const { sendEmail } = require('../services/email');
 const {
@@ -15,7 +14,9 @@ const {
 const { verifyRecaptchaV2 } = require('../middleware/recaptcha');
 
 const router = express.Router();
-const prisma = new PrismaClient();
+
+// Use shared Prisma instance from req.prisma (set in index.js)
+// This prevents multiple client instances
 
 // Validation rules
 const registerValidation = [
@@ -45,7 +46,8 @@ const generateRandomToken = () => {
 // @route   POST /api/auth/register
 // @desc    Register a new user
 // @access  Public
-router.post('/register', registrationLimiter, verifyRecaptchaV2, registerValidation, async (req, res) => {
+router.post('/register', registrationLimiter, registerValidation, async (req, res) => {
+  const prisma = req.prisma;
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -57,6 +59,9 @@ router.post('/register', registrationLimiter, verifyRecaptchaV2, registerValidat
 
     const { email, password, name, phone, role, companyName, businessType } = req.body;
 
+    // Use shared Prisma instance
+    const prisma = req.prisma;
+    
     // Check if user exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
@@ -142,6 +147,7 @@ router.post('/register', registrationLimiter, verifyRecaptchaV2, registerValidat
 router.post('/verify-email', authLimiter, [
   body('token').notEmpty().withMessage('Verification token required')
 ], async (req, res) => {
+  const prisma = req.prisma;
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -193,6 +199,7 @@ router.post('/verify-email', authLimiter, [
 // @desc    Resend verification email
 // @access  Private
 router.post('/resend-verification', authenticate, async (req, res) => {
+  const prisma = req.prisma;
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id }
@@ -235,6 +242,7 @@ router.post('/resend-verification', authenticate, async (req, res) => {
 router.post('/forgot-password', passwordResetLimiter, [
   body('email').isEmail().normalizeEmail().withMessage('Valid email required')
 ], async (req, res) => {
+  const prisma = req.prisma;
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -287,6 +295,7 @@ router.post('/reset-password', [
   body('token').notEmpty().withMessage('Reset token required'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
 ], async (req, res) => {
+  const prisma = req.prisma;
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -339,7 +348,8 @@ router.post('/reset-password', [
 // @route   POST /api/auth/login
 // @desc    Login user
 // @access  Public
-router.post('/login', loginLimiter, verifyRecaptchaV2, loginValidation, async (req, res) => {
+router.post('/login', loginLimiter, loginValidation, async (req, res) => {
+  const prisma = req.prisma;
   try {
     console.log('[LOGIN] Starting login attempt for:', req.body.email);
     
@@ -355,6 +365,9 @@ router.post('/login', loginLimiter, verifyRecaptchaV2, loginValidation, async (r
     const { email, password } = req.body;
     console.log('[LOGIN] Finding user:', email);
 
+    // Use shared Prisma instance
+    const prisma = req.prisma;
+    
     // Find user
     const user = await prisma.user.findUnique({
       where: { email },
@@ -422,6 +435,7 @@ router.post('/login', loginLimiter, verifyRecaptchaV2, loginValidation, async (r
 // @desc    Get current user
 // @access  Private
 router.get('/me', authenticate, async (req, res) => {
+  const prisma = req.prisma;
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
@@ -460,6 +474,7 @@ router.put('/update-password', authenticate, [
   body('currentPassword').notEmpty().withMessage('Current password required'),
   body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters')
 ], async (req, res) => {
+  const prisma = req.prisma;
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
