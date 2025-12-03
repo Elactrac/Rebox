@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 const OAuthCallback = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { loginWithToken } = useAuth();
   const [status, setStatus] = useState('processing');
   const [message, setMessage] = useState('Processing authentication...');
 
@@ -39,8 +39,8 @@ const OAuthCallback = () => {
         if (response.data.success) {
           const { user, token, isNewUser } = response.data.data;
           
-          // Use the login function from auth context
-          login(user, token);
+          // Store user and token in auth context
+          loginWithToken(user, token);
           
           setStatus('success');
           setMessage(isNewUser ? 'Account created successfully!' : 'Login successful!');
@@ -63,7 +63,7 @@ const OAuthCallback = () => {
     };
 
     handleCallback();
-  }, [searchParams, navigate, login]);
+  }, [searchParams, navigate, loginWithToken]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100">
