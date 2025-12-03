@@ -338,32 +338,6 @@ const templates = {
       <p class="content-text" style="font-size: 13px; color: #6b7280;">
         If you didn't create this account, you can safely ignore this email.
       </p>`)
-          .button { display: inline-block; background: #10B981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
-          .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #666; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>Welcome to ReBox!</h1>
-          </div>
-          <div class="content">
-            <p>Hi ${name},</p>
-            <p>Thank you for signing up for ReBox! Please verify your email address to get started with sustainable packaging recycling.</p>
-            <p style="text-align: center;">
-              <a href="${verifyUrl}" class="button">Verify Email Address</a>
-            </p>
-            <p>Or copy and paste this link in your browser:</p>
-            <p style="word-break: break-all; background: #e5e7eb; padding: 10px; border-radius: 4px;">${verifyUrl}</p>
-            <p>This link will expire in 24 hours.</p>
-          </div>
-          <div class="footer">
-            <p>ReBox - Sustainable Packaging Marketplace</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `
   }),
 
   resetPassword: (name, resetUrl) => ({
