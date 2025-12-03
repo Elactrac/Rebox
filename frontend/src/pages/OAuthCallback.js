@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { oauthAPI } from '../services/api';
@@ -11,13 +11,16 @@ const OAuthCallback = () => {
   const { loginWithToken } = useAuth();
   const [status, setStatus] = useState('processing');
   const [message, setMessage] = useState('Processing authentication...');
+  const hasProcessed = useRef(false); // Persist across re-renders
 
   useEffect(() => {
-    let isHandled = false; // Prevent duplicate calls
-    
     const handleCallback = async () => {
-      if (isHandled) return;
-      isHandled = true;
+      // Prevent duplicate calls - check ref that persists across renders
+      if (hasProcessed.current) {
+        console.log('⏭️ OAuth already processed, skipping duplicate call');
+        return;
+      }
+      hasProcessed.current = true;
       
       const code = searchParams.get('code');
       const state = searchParams.get('state');
