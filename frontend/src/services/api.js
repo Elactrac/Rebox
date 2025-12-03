@@ -23,9 +23,22 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      console.error('🚫 401 Unauthorized:', {
+        url: error.config?.url,
+        method: error.config?.method,
+        message: error.response?.data?.message
+      });
+      
+      // Don't redirect if we're on the OAuth callback page
+      const isOAuthCallback = window.location.pathname.includes('/oauth/callback');
+      const isLoginPage = window.location.pathname === '/login';
+      
+      if (!isOAuthCallback && !isLoginPage) {
+        console.log('🔄 Redirecting to login due to 401');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

@@ -11,15 +11,24 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       const savedToken = localStorage.getItem('token');
+      console.log('🚀 AuthContext initAuth:', { 
+        hasSavedToken: !!savedToken,
+        tokenPreview: savedToken?.substring(0, 20) + '...'
+      });
+      
       if (savedToken) {
         try {
+          console.log('📡 Calling /auth/me with token...');
           const response = await authAPI.getMe();
+          console.log('✅ /auth/me success:', response.data);
           setUser(response.data.data);
           setToken(savedToken);
         } catch (error) {
+          console.error('❌ /auth/me failed:', error.response?.status, error.response?.data);
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           setToken(null);
+          setUser(null);
         }
       }
       setLoading(false);
@@ -39,6 +48,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const loginWithToken = (userData, newToken) => {
+    console.log('🔐 loginWithToken called:', { 
+      hasUser: !!userData, 
+      hasToken: !!newToken,
+      tokenPreview: newToken?.substring(0, 20) + '...'
+    });
     localStorage.setItem('token', newToken);
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
