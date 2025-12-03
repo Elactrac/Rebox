@@ -31,7 +31,7 @@ router.get('/test-email-config', (req, res) => {
   });
 });
 
-// Test sending actual email
+// Test sending actual email with timeout
 router.post('/test-send-email', async (req, res) => {
   try {
     const { sendEmail } = require('../services/email');
@@ -44,8 +44,15 @@ router.post('/test-send-email', async (req, res) => {
       });
     }
     
-    // Try sending a test email
-    const result = await sendEmail(testEmail, 'welcome', ['Test User', 'INDIVIDUAL']);
+    // Try sending a test email with timeout
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Email send timeout')), 10000)
+    );
+    
+    const result = await Promise.race([
+      sendEmail(testEmail, 'welcome', ['Test User', 'INDIVIDUAL']),
+      timeoutPromise
+    ]);
     
     res.json({
       success: result.success,
@@ -56,8 +63,48 @@ router.post('/test-send-email', async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Error sending test email',
+      message: 'Failed to send test email',
       error: error.message
+    });
+  }
+});
+
+// Direct nodemailer test
+router.post('/test-smtp-direct', async (req, res) => {
+  try {
+    const nodemailer = require('nodemailer');
+    
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+      }
+    });
+    
+    // Verify connection
+    await transporter.verify();
+    
+    // Send test email
+    const info = await transporter.sendMail({
+      from: `"ReBox Test" <${process.env.SMTP_USER}>`,
+      to: req.body.email || process.env.SMTP_USER,
+      subject: 'SMTP Test - ReBox',
+      text: 'If you receive this, SMTP is working!',
+      html: '<b>If you receive this, SMTP is working!</b>'
+    });
+    
+    res.json({
+      success: true,
+      message: 'Email sent successfully!',
+      messageId: info.messageId
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'SMTP test failed',
+      error: error.message,
+      code: error.code
     });
   }
 });
