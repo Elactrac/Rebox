@@ -341,8 +341,11 @@ router.post('/reset-password', [
 // @access  Public
 router.post('/login', loginLimiter, verifyRecaptchaV2, loginValidation, async (req, res) => {
   try {
+    console.log('[LOGIN] Starting login attempt for:', req.body.email);
+    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('[LOGIN] Validation errors:', errors.array());
       return res.status(400).json({ 
         success: false, 
         errors: errors.array() 
@@ -350,6 +353,7 @@ router.post('/login', loginLimiter, verifyRecaptchaV2, loginValidation, async (r
     }
 
     const { email, password } = req.body;
+    console.log('[LOGIN] Finding user:', email);
 
     // Find user
     const user = await prisma.user.findUnique({
@@ -361,14 +365,18 @@ router.post('/login', loginLimiter, verifyRecaptchaV2, loginValidation, async (r
     });
 
     if (!user) {
+      console.log('[LOGIN] User not found:', email);
       return res.status(401).json({ 
         success: false, 
         message: 'Invalid credentials' 
       });
     }
 
+    console.log('[LOGIN] User found:', user.id, 'has password:', !!user.password);
+
     // Check if user has a password (OAuth users might not)
     if (!user.password) {
+      console.log('[LOGIN] User has no password (OAuth user)');
       return res.status(401).json({ 
         success: false, 
         message: 'This account uses OAuth login. Please sign in with Google.' 
@@ -376,13 +384,19 @@ router.post('/login', loginLimiter, verifyRecaptchaV2, loginValidation, async (r
     }
 
     // Check password
+    console.log('[LOGIN] Comparing password...');
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log('[LOGIN] Password match result:', isMatch);
+    
     if (!isMatch) {
+      console.log('[LOGIN] Password mismatch');
       return res.status(401).json({ 
         success: false, 
         message: 'Invalid credentials' 
       });
     }
+    
+    console.log('[LOGIN] Password matched, generating token...');
 
     const token = generateToken(user.id);
 
