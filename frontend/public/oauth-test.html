@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OAuth Debug Test</title>
+</head>
+<body>
+    <h1>OAuth Configuration Test</h1>
+    <button id="testBtn">Test OAuth Config</button>
+    <pre id="result"></pre>
+    
+    <script>
+        const API_URL = 'https://rebox-m3qz.onrender.com/api';
+        
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            const resultEl = document.getElementById('result');
+            resultEl.textContent = 'Fetching OAuth config...';
+            
+            try {
+                const response = await fetch(`${API_URL}/oauth/config`);
+                const data = await response.json();
+                
+                resultEl.textContent = JSON.stringify(data, null, 2);
+                
+                if (data.success && data.data.google.enabled) {
+                    resultEl.textContent += '\n\n✅ Google OAuth is ENABLED!';
+                } else {
+                    resultEl.textContent += '\n\n❌ Google OAuth is DISABLED';
+                }
+            } catch (error) {
+                resultEl.textContent = `Error: ${error.message}\n${error.stack}`;
+            }
+        });
+        
+        // Auto-run on load
+        window.onload = () => document.getElementById('testBtn').click();
+    </script>
+</body>
+</html>

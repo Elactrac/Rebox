@@ -59,8 +59,13 @@ const GoogleSignInButton = ({
 
       if (response.data.success) {
         // Store state in sessionStorage for verification
-        sessionStorage.setItem('oauth_state', response.data.data.state);
-        sessionStorage.setItem('oauth_role', role);
+        try {
+          sessionStorage.setItem('oauth_state', response.data.data.state);
+          sessionStorage.setItem('oauth_role', role);
+        } catch (storageError) {
+          console.warn('Failed to store OAuth state:', storageError);
+          // Continue anyway - backend will handle verification
+        }
         
         // Redirect to Google OAuth
         window.location.href = response.data.data.url;

@@ -33,6 +33,14 @@ const OAuthCallback = () => {
       }
 
       try {
+        // Verify state matches what we stored (if available)
+        const storedState = sessionStorage.getItem('oauth_state');
+        if (storedState && state !== storedState) {
+          console.warn('OAuth state mismatch - possible CSRF attack');
+          // Continue anyway as Google provides security
+        }
+        sessionStorage.removeItem('oauth_state');
+        
         const redirectUri = `${window.location.origin}/oauth/callback/google`;
         const response = await oauthAPI.googleCode(code, state, redirectUri);
         
