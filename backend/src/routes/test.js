@@ -13,14 +13,14 @@ router.get('/test-email-config', (req, res) => {
       port: !!process.env.SMTP_PORT,
       user: !!process.env.SMTP_USER,
       pass: !!process.env.SMTP_PASS,
-      from: !!process.env.SMTP_FROM
+      from: !!process.env.EMAIL_FROM
     },
     smtpValues: {
       host: process.env.SMTP_HOST ? 'SET' : 'NOT SET',
       port: process.env.SMTP_PORT || 'NOT SET',
       user: process.env.SMTP_USER ? process.env.SMTP_USER.substring(0, 3) + '***' : 'NOT SET',
       pass: process.env.SMTP_PASS ? '***' + process.env.SMTP_PASS.slice(-4) : 'NOT SET',
-      from: process.env.SMTP_FROM || 'NOT SET'
+      from: process.env.EMAIL_FROM || 'NOT SET'
     }
   };
   
@@ -29,6 +29,37 @@ router.get('/test-email-config', (req, res) => {
     config,
     message: process.env.SMTP_HOST ? 'SMTP is configured' : 'SMTP is NOT configured'
   });
+});
+
+// Test sending actual email
+router.post('/test-send-email', async (req, res) => {
+  try {
+    const { sendEmail } = require('../services/email');
+    const testEmail = req.body.email || process.env.SMTP_USER;
+    
+    if (!testEmail) {
+      return res.status(400).json({
+        success: false,
+        message: 'No email address provided'
+      });
+    }
+    
+    // Try sending a test email
+    const result = await sendEmail(testEmail, 'welcome', ['Test User', 'INDIVIDUAL']);
+    
+    res.json({
+      success: result.success,
+      message: result.success ? 'Test email sent successfully!' : 'Failed to send test email',
+      messageId: result.messageId,
+      error: result.error
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error sending test email',
+      error: error.message
+    });
+  }
 });
 
 router.get('/debug-user/:email', async (req, res) => {
