@@ -147,7 +147,11 @@ router.get('/recyclers', authenticate, async (req, res) => {
 router.get('/dashboard-stats', authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
+    const userRole = req.user.role;
 
+    // Recyclers view pickups assigned to them
+    const pickupWhere = userRole === 'RECYCLER' ? { recyclerId: userId } : { userId };
+    
     // Get counts and aggregates
     const [packages, pickups, rewards, impact] = await Promise.all([
       prisma.package.groupBy({
@@ -157,7 +161,7 @@ router.get('/dashboard-stats', authenticate, async (req, res) => {
       }),
       prisma.pickup.groupBy({
         by: ['status'],
-        where: { userId },
+        where: pickupWhere,
         _count: { status: true }
       }),
       prisma.reward.findUnique({
@@ -168,17 +172,28 @@ router.get('/dashboard-stats', authenticate, async (req, res) => {
       })
     ]);
 
-    // Recent activity
+    // Recent activity based on role
     const recentPickups = await prisma.pickup.findMany({
-      where: { userId },
+      where: pickupWhere,
       orderBy: { createdAt: 'desc' },
       take: 5,
       include: {
         items: {
           include: { package: true }
+        },
+        user: {
+          select: { name: true, phone: true }
         }
       }
     });
+
+    // For businesses, also get buyback offer stats
+    let buybackOffers = 0;
+    if (userRole === 'BUSINESS') {
+      buybackOffers = await prisma.buybackOffer.count({
+        where: { brandId: userId, status: 'PENDING' }
+      });
+    }
 
     res.json({
       success: true,
@@ -187,7 +202,8 @@ router.get('/dashboard-stats', authenticate, async (req, res) => {
         pickupStats: pickups,
         rewards,
         impact,
-        recentPickups
+        recentPickups,
+        buybackOffers
       }
     });
   } catch (error) {
