@@ -682,21 +682,41 @@ const sendEmail = async (to, template, data, options = {}) => {
   const timeout = options.timeout || 10000; // 10 second default timeout
   
   try {
-    // Gmail requires "From" to match authenticated user, but we can set a display name
-    const fromAddress = process.env.EMAIL_FROM || `"ReBox" <${process.env.SMTP_USER || 'noreply@rebox.com'}>`;
+    const fromAddress = process.env.EMAIL_FROM || process.env.SMTP_FROM || 'noreply@rebox.com';
     
     console.log(`📧 Sending email [${template}]:`, {
       to,
       subject: emailContent.subject,
-      from: fromAddress
+      from: fromAddress,
+      provider: process.env.SENDGRID_API_KEY ? 'SendGrid' : 'SMTP'
     });
     
-    // Create a promise that rejects after timeout
+    // Use SendGrid if API key is available (more reliable)
+    if (process.env.SENDGRID_API_KEY) {
+      const msg = {
+        to,
+        from: fromAddress,
+        subject: emailContent.subject,
+        text: emailContent.text,
+        html: emailContent.html
+      };
+      
+      const response = await sgMail.send(msg);
+      
+      console.log('✅ Email sent via SendGrid:', {
+        template,
+        statusCode: response[0].statusCode,
+        to
+      });
+      
+      return { success: true, provider: 'SendGrid', statusCode: response[0].statusCode };
+    }
+    
+    // Fallback to SMTP (nodemailer)
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => reject(new Error('Email send timeout')), timeout);
     });
     
-    // Race between sending email and timeout
     const info = await Promise.race([
       transporter.sendMail({
         from: fromAddress,
@@ -708,19 +728,20 @@ const sendEmail = async (to, template, data, options = {}) => {
       timeoutPromise
     ]);
     
-    console.log('✅ Email sent:', {
+    console.log('✅ Email sent via SMTP:', {
       template,
       messageId: info.messageId,
       accepted: info.accepted?.length || 0,
       rejected: info.rejected?.length || 0
     });
     
-    return { success: true, messageId: info.messageId };
+    return { success: true, messageId: info.messageId, provider: 'SMTP' };
   } catch (error) {
     console.error(`❌ Email send failed [${template}]:`, {
       to,
       error: error.message,
-      code: error.code
+      code: error.code,
+      response: error.response?.body
     });
     
     // Don't fail the request if email fails
