@@ -28,7 +28,8 @@ router.get('/pickup/:trackingCode', async (req, res) => {
     }
 
     // Generate tracking URL
-    const trackingUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/track/${trackingCode}`;
+    const frontendUrl = process.env.FRONTEND_URL?.split(',')[0]?.trim() || 'https://rebox-wd.vercel.app';
+    const trackingUrl = `${frontendUrl}/track/${trackingCode}`;
 
     // Generate QR code based on format
     if (format === 'svg') {
@@ -114,7 +115,8 @@ router.get('/package/:id', authenticate, async (req, res) => {
       });
     }
 
-    const packageUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/packages/${id}`;
+    const frontendUrl = process.env.FRONTEND_URL?.split(',')[0]?.trim() || 'https://rebox-wd.vercel.app';
+    const packageUrl = `${frontendUrl}/packages/${id}`;
 
     if (format === 'svg') {
       const svg = await QRCode.toString(packageUrl, {
@@ -186,7 +188,8 @@ router.post('/batch', authenticate, async (req, res) => {
             return { trackingCode, error: 'Not found' };
           }
 
-          const trackingUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/track/${trackingCode}`;
+          const frontendUrl = process.env.FRONTEND_URL?.split(',')[0]?.trim() || 'https://rebox-wd.vercel.app';
+          const trackingUrl = `${frontendUrl}/track/${trackingCode}`;
           const qrCode = await QRCode.toDataURL(trackingUrl, {
             width: 200,
             margin: 2
@@ -254,7 +257,8 @@ router.get('/label/:trackingCode', authenticate, async (req, res) => {
       });
     }
 
-    const trackingUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/track/${trackingCode}`;
+    const frontendUrl = process.env.FRONTEND_URL?.split(',')[0]?.trim() || 'https://rebox-wd.vercel.app';
+    const trackingUrl = `${frontendUrl}/track/${trackingCode}`;
     const qrCode = await QRCode.toDataURL(trackingUrl, {
       width: 150,
       margin: 1
