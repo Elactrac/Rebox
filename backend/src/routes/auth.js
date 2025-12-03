@@ -47,8 +47,10 @@ const generateRandomToken = () => {
 // @desc    Register a new user
 // @access  Public
 router.post('/register', registrationLimiter, registerValidation, async (req, res) => {
-  const prisma = req.prisma;
   try {
+    // Use shared Prisma instance
+    const prisma = req.prisma;
+    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ 
@@ -58,9 +60,6 @@ router.post('/register', registrationLimiter, registerValidation, async (req, re
     }
 
     const { email, password, name, phone, role, companyName, businessType } = req.body;
-
-    // Use shared Prisma instance
-    const prisma = req.prisma;
     
     // Check if user exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -349,8 +348,10 @@ router.post('/reset-password', [
 // @desc    Login user
 // @access  Public
 router.post('/login', loginLimiter, loginValidation, async (req, res) => {
-  const prisma = req.prisma;
   try {
+    // Use shared Prisma instance
+    const prisma = req.prisma;
+    
     console.log('[LOGIN] Starting login attempt for:', req.body.email);
     
     const errors = validationResult(req);
@@ -364,9 +365,6 @@ router.post('/login', loginLimiter, loginValidation, async (req, res) => {
 
     const { email, password } = req.body;
     console.log('[LOGIN] Finding user:', email);
-
-    // Use shared Prisma instance
-    const prisma = req.prisma;
     
     // Find user
     const user = await prisma.user.findUnique({
