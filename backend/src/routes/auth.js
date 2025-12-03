@@ -33,7 +33,12 @@ const loginValidation = [
 
 // Generate JWT token
 const generateToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, {
+  const secret = process.env.JWT_SECRET || 'rebox-default-secret-key-2024-change-in-production';
+  if (!secret || secret.trim() === '') {
+    console.error('JWT_SECRET not configured!');
+    throw new Error('JWT configuration error');
+  }
+  return jwt.sign({ userId }, secret, {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d'
   });
 };
