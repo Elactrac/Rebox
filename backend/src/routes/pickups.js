@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const { PrismaClient } = require('@prisma/client');
 const { authenticate, authorize } = require('../middleware/auth');
 const { sendToUser, sendPickupUpdate, NotificationTypes } = require('../services/socket');
+const { sendEmail } = require('../services/email');
 const crypto = require('crypto');
 
 const router = express.Router();
@@ -131,13 +132,44 @@ router.post('/', authenticate, [
       return newPickup;
     });
 
-    // Send real-time notification
+    // Send real-time notification to user
     sendToUser(req.user.id, NotificationTypes.PICKUP_SCHEDULED, {
       pickupId: pickup.id,
       trackingCode: pickup.trackingCode,
       scheduledDate: pickup.scheduledDate,
       scheduledSlot: pickup.scheduledSlot,
       message: 'Your pickup has been scheduled!'
+    });
+
+    // Get user details for emails
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { name: true, email: true }
+    });
+
+    // Send confirmation email to user
+    if (user.email) {
+      sendEmail(user.email, 'pickupConfirmation', [user.name, pickup]).catch(err => 
+        console.error('Failed to send user confirmation email:', err)
+      );
+    }
+
+    // Get all active recyclers in the area and notify them
+    const recyclers = await prisma.user.findMany({
+      where: {
+        role: 'RECYCLER',
+        isVerified: true
+      },
+      select: { id: true, name: true, email: true }
+    });
+
+    // Send email to all recyclers about new pickup
+    recyclers.forEach(recycler => {
+      if (recycler.email) {
+        sendEmail(recycler.email, 'newPickupAlert', [recycler.name, pickup, user]).catch(err =>
+          console.error(`Failed to send pickup alert to recycler ${recycler.email}:`, err)
+        );
+      }
     });
 
     res.status(201).json({

@@ -122,6 +122,59 @@ const templates = {
     `
   }),
 
+  newPickupAlert: (recyclerName, pickup, user) => ({
+    subject: `New Pickup Available - ${pickup.trackingCode}`,
+    text: `Hi ${recyclerName},\n\nA new pickup is available in your area!\n\nTracking Code: ${pickup.trackingCode}\nCustomer: ${user.name}\nDate: ${new Date(pickup.scheduledDate).toLocaleDateString()}\nTime Slot: ${pickup.scheduledSlot}\nLocation: ${pickup.city}, ${pickup.state}\nItems: ${pickup.totalItems} package(s)\nEstimated Value: $${pickup.totalValue.toFixed(2)}\n\nView details and claim this pickup at: ${process.env.FRONTEND_URL}/pickups/${pickup.id}\n\nThanks,\nThe ReBox Team`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #059669; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
+          .details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
+          .button { display: inline-block; background: #059669; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+          .tracking-code { font-size: 20px; font-weight: bold; color: #059669; text-align: center; margin: 15px 0; }
+          .urgent { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 15px 0; border-radius: 4px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🚛 New Pickup Available</h1>
+          </div>
+          <div class="content">
+            <p>Hi ${recyclerName},</p>
+            <div class="urgent">
+              <strong>⏰ Action Required</strong><br>
+              A new pickup request is waiting to be claimed in your service area!
+            </div>
+            <div class="tracking-code">${pickup.trackingCode}</div>
+            <div class="details">
+              <div class="detail-row"><span><strong>Customer:</strong></span><span>${user.name}</span></div>
+              <div class="detail-row"><span><strong>Date:</strong></span><span>${new Date(pickup.scheduledDate).toLocaleDateString()}</span></div>
+              <div class="detail-row"><span><strong>Time Slot:</strong></span><span>${pickup.scheduledSlot}</span></div>
+              <div class="detail-row"><span><strong>Location:</strong></span><span>${pickup.city}, ${pickup.state}</span></div>
+              <div class="detail-row"><span><strong>Items:</strong></span><span>${pickup.totalItems} package(s)</span></div>
+              <div class="detail-row"><span><strong>Weight:</strong></span><span>${pickup.totalWeight || 0} kg</span></div>
+              <div class="detail-row"><span><strong>Est. Value:</strong></span><span>$${pickup.totalValue.toFixed(2)}</span></div>
+            </div>
+            <p><strong>Pickup Address:</strong><br>${pickup.address}<br>${pickup.city}, ${pickup.state} ${pickup.zipCode}</p>
+            ${pickup.instructions ? `<p><strong>Special Instructions:</strong><br>${pickup.instructions}</p>` : ''}
+            <p style="text-align: center;">
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/pickups/${pickup.id}" class="button">View & Claim Pickup</a>
+            </p>
+            <p style="font-size: 12px; color: #666; text-align: center;">First come, first served! Claim this pickup before another recycler does.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+  }),
+
   pickupConfirmation: (name, pickup) => ({
     subject: `Pickup Scheduled - ${pickup.trackingCode}`,
     text: `Hi ${name},\n\nYour pickup has been scheduled!\n\nTracking Code: ${pickup.trackingCode}\nDate: ${new Date(pickup.scheduledDate).toLocaleDateString()}\nTime Slot: ${pickup.scheduledSlot}\nAddress: ${pickup.address}, ${pickup.city}, ${pickup.state} ${pickup.zipCode}\n\nTrack your pickup at: ${process.env.FRONTEND_URL}/pickups/${pickup.id}\n\nThanks,\nThe ReBox Team`,
