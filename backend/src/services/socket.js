@@ -5,9 +5,14 @@ let io;
 const userSockets = new Map(); // userId -> Set of socket ids
 
 const initializeSocket = (server) => {
+  // Parse FRONTEND_URL which may contain multiple origins
+  const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3000')
+    .split(',')
+    .map(origin => origin.trim());
+  
   io = new Server(server, {
     cors: {
-      origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+      origin: allowedOrigins,
       methods: ['GET', 'POST'],
       credentials: true
     }

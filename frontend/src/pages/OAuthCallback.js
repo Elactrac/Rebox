@@ -13,7 +13,12 @@ const OAuthCallback = () => {
   const [message, setMessage] = useState('Processing authentication...');
 
   useEffect(() => {
+    let isHandled = false; // Prevent duplicate calls
+    
     const handleCallback = async () => {
+      if (isHandled) return;
+      isHandled = true;
+      
       const code = searchParams.get('code');
       const state = searchParams.get('state');
       const error = searchParams.get('error');
