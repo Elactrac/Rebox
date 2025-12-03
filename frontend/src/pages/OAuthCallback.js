@@ -42,13 +42,22 @@ const OAuthCallback = () => {
         sessionStorage.removeItem('oauth_state');
         
         const redirectUri = `${window.location.origin}/oauth/callback/google`;
+        console.log('🔄 Calling backend with OAuth code:', { codeLength: code.length, redirectUri });
+        
         const response = await oauthAPI.googleCode(code, state, redirectUri);
+        console.log('📥 Backend response:', response.data);
         
         if (response.data.success) {
           const { user, token, isNewUser } = response.data.data;
           
+          console.log('👤 User data received:', { email: user.email, id: user.id, isNewUser });
+          console.log('🎫 Token received:', token.substring(0, 30) + '...');
+          
           // Store user and token in auth context
           loginWithToken(user, token);
+          
+          console.log('💾 Token stored in localStorage');
+          console.log('✅ Login complete, navigating to dashboard...');
           
           setStatus('success');
           setMessage(isNewUser ? 'Account created successfully!' : 'Login successful!');

@@ -11,10 +11,29 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       const savedToken = localStorage.getItem('token');
+      const savedUser = localStorage.getItem('user');
       console.log('🚀 AuthContext initAuth:', { 
         hasSavedToken: !!savedToken,
-        tokenPreview: savedToken?.substring(0, 20) + '...'
+        hasSavedUser: !!savedUser,
+        tokenPreview: savedToken?.substring(0, 20) + '...',
+        currentPath: window.location.pathname
       });
+      
+      // If we're on OAuth callback page, skip verification temporarily
+      // Let the callback handle login first
+      if (window.location.pathname.includes('/oauth/callback')) {
+        console.log('⏸️ Skipping auto-verification on OAuth callback page');
+        if (savedToken && savedUser) {
+          try {
+            setUser(JSON.parse(savedUser));
+            setToken(savedToken);
+          } catch (e) {
+            console.error('Failed to parse saved user:', e);
+          }
+        }
+        setLoading(false);
+        return;
+      }
       
       if (savedToken) {
         try {
