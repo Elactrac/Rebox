@@ -15,13 +15,9 @@ const verifyRecaptcha = async (token, remoteIp = null) => {
   try {
     const secretKey = process.env.RECAPTCHA_SECRET_KEY;
 
-    if (!secretKey) {
-      console.warn('reCAPTCHA secret key not configured');
-      // In development, allow bypass if not configured
-      if (process.env.NODE_ENV === 'development') {
-        return { success: true, score: 1.0, bypass: true };
-      }
-      return { success: false, error: 'reCAPTCHA not configured' };
+    if (!secretKey || secretKey.trim() === '') {
+      console.warn('reCAPTCHA secret key not configured - bypassing verification');
+      return { success: true, score: 1.0, bypass: true };
     }
 
     if (!token) {
@@ -60,10 +56,19 @@ const verifyRecaptchaV2 = async (req, res, next) => {
   try {
     const { recaptchaToken } = req.body;
     const clientIp = req.ip || req.connection.remoteAddress;
+    
+    const secretKey = process.env.RECAPTCHA_SECRET_KEY;
 
-    // If no token provided and no secret configured, bypass
-    if (!recaptchaToken && !process.env.RECAPTCHA_SECRET_KEY) {
-      console.log('reCAPTCHA bypassed - not configured');
+    // If no secret key configured or empty, bypass reCAPTCHA entirely
+    if (!secretKey || secretKey.trim() === '') {
+      console.log('reCAPTCHA bypassed - secret key not configured');
+      req.recaptchaVerified = false;
+      return next();
+    }
+
+    // If no token provided, bypass (optional reCAPTCHA)
+    if (!recaptchaToken) {
+      console.log('reCAPTCHA bypassed - no token provided');
       req.recaptchaVerified = false;
       return next();
     }

@@ -38,10 +38,13 @@ const Register = () => {
       return;
     }
 
-    // Check reCAPTCHA if site key is configured
-    if (process.env.REACT_APP_RECAPTCHA_SITE_KEY && 
-        process.env.REACT_APP_RECAPTCHA_SITE_KEY !== 'your-recaptcha-site-key' && 
-        !recaptchaToken) {
+    // Check reCAPTCHA only if site key is properly configured
+    const siteKey = process.env.REACT_APP_RECAPTCHA_SITE_KEY;
+    const isRecaptchaConfigured = siteKey && 
+                                   siteKey !== 'your-recaptcha-site-key' && 
+                                   siteKey !== '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'; // Google test key
+    
+    if (isRecaptchaConfigured && !recaptchaToken) {
       toast.error('Please complete the reCAPTCHA');
       return;
     }
