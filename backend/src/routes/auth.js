@@ -130,7 +130,8 @@ router.post('/register', registrationLimiter, verifyRecaptchaV2, registerValidat
     console.error('Registration error:', error);
     res.status(500).json({ 
       success: false, 
-      message: 'Registration failed' 
+      message: 'Registration failed',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
@@ -397,7 +398,8 @@ router.post('/login', loginLimiter, verifyRecaptchaV2, loginValidation, async (r
     console.error('Login error:', error);
     res.status(500).json({ 
       success: false, 
-      message: 'Login failed' 
+      message: 'Login failed',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
