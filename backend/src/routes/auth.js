@@ -127,6 +127,12 @@ router.post('/register', registrationLimiter, registerValidation, async (req, re
     // Send verification email
     const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${verifyToken}`;
     await sendEmail(email, 'verifyEmail', [name, verifyUrl]);
+    
+    // Send welcome email (non-blocking)
+    sendEmail(email, 'welcome', [name, user.role]).catch(err => {
+      console.error('Failed to send welcome email:', err);
+      // Don't fail registration if welcome email fails
+    });
 
     const token = generateToken(user.id);
 
