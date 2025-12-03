@@ -657,7 +657,7 @@ const templates = {
       <p style="text-align: center; font-size: 13px; color: #6b7280; margin-top: 20px;">
         🌱 Thank you for contributing to a sustainable future! Each package you recycle makes a difference.
       </p>
-    `
+    `)
   })
 };
 
