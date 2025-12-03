@@ -366,6 +366,14 @@ router.post('/login', loginLimiter, verifyRecaptchaV2, loginValidation, async (r
       });
     }
 
+    // Check if user has a password (OAuth users might not)
+    if (!user.password) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'This account uses OAuth login. Please sign in with Google.' 
+      });
+    }
+
     // Check password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
