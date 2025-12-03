@@ -1,6 +1,9 @@
 // Test endpoint to verify email configuration
 const express = require('express');
+const bcrypt = require('bcryptjs');
+const { PrismaClient } = require('@prisma/client');
 const router = express.Router();
+const prisma = new PrismaClient();
 
 router.get('/test-email-config', (req, res) => {
   const config = {
@@ -26,6 +29,49 @@ router.get('/test-email-config', (req, res) => {
     config,
     message: process.env.SMTP_HOST ? 'SMTP is configured' : 'SMTP is NOT configured'
   });
+});
+
+router.get('/debug-user/:email', async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email: req.params.email },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        password: true,
+        provider: true,
+        role: true
+      }
+    });
+    
+    if (!user) {
+      return res.json({ success: false, message: 'User not found' });
+    }
+    
+    // Test password
+    const testPass = 'user123';
+    const isMatch = user.password ? await bcrypt.compare(testPass, user.password) : false;
+    
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        hasPassword: !!user.password,
+        passwordLength: user.password ? user.password.length : 0,
+        provider: user.provider,
+        role: user.role,
+        passwordMatchesUser123: isMatch
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
 });
 
 module.exports = router;
