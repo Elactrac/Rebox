@@ -2,9 +2,15 @@ const nodemailer = require('nodemailer');
 
 // Create reusable transporter
 const createTransporter = () => {
-  // For development/testing, use Ethereal Email
-  // For production, use real SMTP service (SendGrid, AWS SES, etc.)
-  if (process.env.NODE_ENV === 'production' && process.env.SMTP_HOST) {
+  // Check if we have valid SMTP credentials (not placeholders)
+  const hasValidSMTP = process.env.SMTP_HOST && 
+                       process.env.SMTP_USER && 
+                       process.env.SMTP_PASS &&
+                       process.env.SMTP_USER !== 'your-email@gmail.com' &&
+                       process.env.SMTP_PASS !== 'your-gmail-app-password';
+  
+  // For production with valid credentials, use real SMTP
+  if (process.env.NODE_ENV === 'production' && hasValidSMTP) {
     console.log('📧 Initializing SMTP transporter with:', {
       host: process.env.SMTP_HOST,
       port: process.env.SMTP_PORT,
@@ -13,15 +19,13 @@ const createTransporter = () => {
     });
     
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT) || 587,
-      secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+      service: 'gmail', // Use Gmail service directly
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS
       },
       tls: {
-        rejectUnauthorized: false // Allow self-signed certificates in development
+        rejectUnauthorized: false
       }
     });
     
@@ -29,6 +33,7 @@ const createTransporter = () => {
     transporter.verify((error, success) => {
       if (error) {
         console.error('❌ SMTP connection verification failed:', error);
+        console.error('⚠️  Emails will be logged to console instead');
       } else {
         console.log('✅ SMTP server is ready to send emails');
       }
@@ -37,20 +42,23 @@ const createTransporter = () => {
     return transporter;
   }
 
-  // Development - log to console
-  console.log('⚠️  Running in DEVELOPMENT mode - emails will be logged to console only');
+  // Development mode or missing credentials - log to console
+  if (!hasValidSMTP && process.env.NODE_ENV === 'production') {
+    console.warn('⚠️  WARNING: Production mode but SMTP credentials not configured');
+    console.warn('   Please update .env with valid SMTP credentials or set NODE_ENV=development');
+    console.warn('   Emails will be logged to console only (not sent)');
+  } else {
+    console.log('ℹ️  Running in DEVELOPMENT mode - emails will be logged to console only');
+  }
+  
   return {
     sendMail: async (options) => {
-      console.log('=== Email Send (Development Mode) ===');
+      console.log('\n=== 📧 Email Send (Console Mode) ===');
       console.log('To:', options.to);
       console.log('Subject:', options.subject);
-      console.log('Text:', options.text);
-      if (options.html) {
-        console.log('HTML: (see below)');
-        console.log(options.html.substring(0, 500) + '...');
-      }
-      console.log('=====================================');
-      return { messageId: 'dev-' + Date.now() };
+      console.log('Preview:', options.text.substring(0, 200) + '...');
+      console.log('=====================================\n');
+      return { messageId: 'console-' + Date.now(), accepted: [options.to] };
     }
   };
 };
@@ -661,45 +669,54 @@ const templates = {
   })
 };
 
-// Send email function
-const sendEmail = async (to, template, data) => {
+// Send email function with timeout
+const sendEmail = async (to, template, data, options = {}) => {
   const emailContent = templates[template](...data);
+  const timeout = options.timeout || 10000; // 10 second default timeout
   
   try {
     // Gmail requires "From" to match authenticated user, but we can set a display name
-    const fromAddress = process.env.EMAIL_FROM || `"ReBox" <${process.env.SMTP_USER}>`;
+    const fromAddress = process.env.EMAIL_FROM || `"ReBox" <${process.env.SMTP_USER || 'noreply@rebox.com'}>`;
     
-    console.log(`📧 Attempting to send email:`, {
+    console.log(`📧 Sending email [${template}]:`, {
       to,
-      template,
       subject: emailContent.subject,
       from: fromAddress
     });
     
-    const info = await transporter.sendMail({
-      from: fromAddress,
-      to,
-      subject: emailContent.subject,
-      text: emailContent.text,
-      html: emailContent.html
+    // Create a promise that rejects after timeout
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Email send timeout')), timeout);
     });
     
-    console.log('✅ Email sent successfully:', {
+    // Race between sending email and timeout
+    const info = await Promise.race([
+      transporter.sendMail({
+        from: fromAddress,
+        to,
+        subject: emailContent.subject,
+        text: emailContent.text,
+        html: emailContent.html
+      }),
+      timeoutPromise
+    ]);
+    
+    console.log('✅ Email sent:', {
+      template,
       messageId: info.messageId,
-      accepted: info.accepted,
-      rejected: info.rejected,
-      response: info.response
+      accepted: info.accepted?.length || 0,
+      rejected: info.rejected?.length || 0
     });
     
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('❌ Email send error:', {
-      message: error.message,
-      code: error.code,
-      command: error.command,
-      response: error.response,
-      responseCode: error.responseCode
+    console.error(`❌ Email send failed [${template}]:`, {
+      to,
+      error: error.message,
+      code: error.code
     });
+    
+    // Don't fail the request if email fails
     return { success: false, error: error.message };
   }
 };
