@@ -408,17 +408,22 @@ router.post('/login', loginLimiter, loginValidation, async (req, res) => {
     }
     
     console.log('[LOGIN] Password matched, generating token...');
+    console.log('[LOGIN] User ID:', user.id);
 
     const token = generateToken(user.id);
+    console.log('[LOGIN] Token generated successfully');
 
     // Remove password from response
+    console.log('[LOGIN] Preparing response data...');
     const { password: _, resetToken, resetExpires, verifyToken, verifyExpires, ...userWithoutSensitive } = user;
+    console.log('[LOGIN] Response data prepared, sending...');
 
     res.json({
       success: true,
       message: 'Login successful',
       data: { user: userWithoutSensitive, token }
     });
+    console.log('[LOGIN] Login successful!');
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ 
