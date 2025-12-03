@@ -7,6 +7,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { PrismaClient } = require('@prisma/client');
+const { sendEmail } = require('../services/email');
 const {
   verifyGoogleToken,
   verifyGoogleCode,
@@ -318,6 +319,11 @@ router.post('/google/code', async (req, res) => {
           rewards: true,
           impactStats: true,
         },
+      });
+      
+      // Send welcome email for new Google OAuth users
+      sendEmail(user.email, 'welcome', [user.name, user.role], { timeout: 5000 }).catch(err => {
+        console.error('Failed to send welcome email to OAuth user:', err.message);
       });
     }
 
