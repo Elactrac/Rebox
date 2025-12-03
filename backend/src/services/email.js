@@ -5,18 +5,40 @@ const createTransporter = () => {
   // For development/testing, use Ethereal Email
   // For production, use real SMTP service (SendGrid, AWS SES, etc.)
   if (process.env.NODE_ENV === 'production' && process.env.SMTP_HOST) {
-    return nodemailer.createTransport({
+    console.log('📧 Initializing SMTP transporter with:', {
       host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT || 587,
-      secure: process.env.SMTP_SECURE === 'true',
+      port: process.env.SMTP_PORT,
+      user: process.env.SMTP_USER,
+      secure: process.env.SMTP_SECURE === 'true'
+    });
+    
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT) || 587,
+      secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS
+      },
+      tls: {
+        rejectUnauthorized: false // Allow self-signed certificates in development
       }
     });
+    
+    // Verify connection configuration
+    transporter.verify((error, success) => {
+      if (error) {
+        console.error('❌ SMTP connection verification failed:', error);
+      } else {
+        console.log('✅ SMTP server is ready to send emails');
+      }
+    });
+    
+    return transporter;
   }
 
   // Development - log to console
+  console.log('⚠️  Running in DEVELOPMENT mode - emails will be logged to console only');
   return {
     sendMail: async (options) => {
       console.log('=== Email Send (Development Mode) ===');
@@ -670,6 +692,13 @@ const sendEmail = async (to, template, data) => {
   const emailContent = templates[template](...data);
   
   try {
+    console.log(`📧 Attempting to send email:`, {
+      to,
+      template,
+      subject: emailContent.subject,
+      from: process.env.EMAIL_FROM || '"ReBox" <noreply@rebox.com>'
+    });
+    
     const info = await transporter.sendMail({
       from: process.env.EMAIL_FROM || '"ReBox" <noreply@rebox.com>',
       to,
@@ -678,10 +707,22 @@ const sendEmail = async (to, template, data) => {
       html: emailContent.html
     });
     
-    console.log('Email sent:', info.messageId);
+    console.log('✅ Email sent successfully:', {
+      messageId: info.messageId,
+      accepted: info.accepted,
+      rejected: info.rejected,
+      response: info.response
+    });
+    
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('Email send error:', error);
+    console.error('❌ Email send error:', {
+      message: error.message,
+      code: error.code,
+      command: error.command,
+      response: error.response,
+      responseCode: error.responseCode
+    });
     return { success: false, error: error.message };
   }
 };
