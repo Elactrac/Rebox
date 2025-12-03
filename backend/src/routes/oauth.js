@@ -93,7 +93,7 @@ router.get('/google/url', (req, res) => {
 // @route   POST /api/oauth/google/token
 // @desc    Authenticate with Google ID token (client-side flow)
 // @access  Public
-router.post('/google/token', verifyRecaptchaV2, async (req, res) => {
+router.post('/google/token', async (req, res) => {
   try {
     const { idToken, role } = req.body;
 
@@ -210,7 +210,7 @@ router.post('/google/token', verifyRecaptchaV2, async (req, res) => {
 // @route   POST /api/oauth/google/code
 // @desc    Authenticate with Google authorization code (server-side flow)
 // @access  Public
-router.post('/google/code', verifyRecaptchaV2, async (req, res) => {
+router.post('/google/code', async (req, res) => {
   try {
     const { code, state, role } = req.body;
 
