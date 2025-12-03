@@ -75,8 +75,8 @@ router.post('/register', registrationLimiter, registerValidation, async (req, re
       });
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12);
+    // Hash password (10 rounds is a good balance between security and speed)
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // Generate verification token
     const verifyToken = generateRandomToken();
@@ -124,18 +124,25 @@ router.post('/register', registrationLimiter, registerValidation, async (req, re
       }
     });
 
-    // Send verification email
-    const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${verifyToken}`;
-    await sendEmail(email, 'verifyEmail', [name, verifyUrl]);
+    // Generate JWT token first
+    const token = generateToken(user.id);
+
+    // Send verification email (non-blocking - don't wait for it)
+    // Use primary production URL (FRONTEND_URL may have multiple URLs for CORS)
+    const frontendUrl = process.env.FRONTEND_URL?.split(',')[0]?.trim() || 'http://localhost:3000';
+    const verifyUrl = `${frontendUrl}/verify-email?token=${verifyToken}`;
+    sendEmail(email, 'verifyEmail', [name, verifyUrl], { timeout: 5000 }).catch(err => {
+      console.error('Failed to send verification email:', err.message);
+      // Don't fail registration if verification email fails
+    });
     
     // Send welcome email (non-blocking)
-    sendEmail(email, 'welcome', [name, user.role]).catch(err => {
-      console.error('Failed to send welcome email:', err);
+    sendEmail(email, 'welcome', [name, user.role], { timeout: 5000 }).catch(err => {
+      console.error('Failed to send welcome email:', err.message);
       // Don't fail registration if welcome email fails
     });
 
-    const token = generateToken(user.id);
-
+    // Return immediately - don't wait for emails
     res.status(201).json({
       success: true,
       message: 'Registration successful. Please check your email to verify your account.',
@@ -230,7 +237,9 @@ router.post('/resend-verification', authenticate, async (req, res) => {
       data: { verifyToken, verifyExpires }
     });
 
-    const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${verifyToken}`;
+    // Use primary production URL (FRONTEND_URL may have multiple URLs for CORS)
+    const frontendUrl = process.env.FRONTEND_URL?.split(',')[0]?.trim() || 'http://localhost:3000';
+    const verifyUrl = `${frontendUrl}/verify-email?token=${verifyToken}`;
     await sendEmail(user.email, 'verifyEmail', [user.name, verifyUrl]);
 
     res.json({
@@ -282,7 +291,9 @@ router.post('/forgot-password', passwordResetLimiter, [
       data: { resetToken, resetExpires }
     });
 
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+    // Use primary production URL (FRONTEND_URL may have multiple URLs for CORS)
+    const frontendUrl = process.env.FRONTEND_URL?.split(',')[0]?.trim() || 'http://localhost:3000';
+    const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
     await sendEmail(email, 'resetPassword', [user.name, resetUrl]);
 
     res.json({
