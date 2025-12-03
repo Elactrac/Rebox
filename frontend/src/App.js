@@ -1,33 +1,42 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 
 // Layout
 import Layout from './components/common/Layout';
 
-// Pages
+// Eager load critical pages (public + first view after login)
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
-import VerifyEmail from './pages/VerifyEmail';
-import OAuthCallback from './pages/OAuthCallback';
-import TrackPickup from './pages/TrackPickup';
 import Dashboard from './pages/Dashboard';
-import Packages from './pages/Packages';
-import PackageDetail from './pages/PackageDetail';
-import NewPackage from './pages/NewPackage';
-import Pickups from './pages/Pickups';
-import SchedulePickup from './pages/SchedulePickup';
-import PickupDetail from './pages/PickupDetail';
-import Rewards from './pages/Rewards';
-import Impact from './pages/Impact';
-import Profile from './pages/Profile';
-import Marketplace from './pages/Marketplace';
-import BuybackOffers from './pages/BuybackOffers';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminUsers from './pages/AdminUsers';
+
+// Lazy load secondary pages to reduce initial bundle size
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
+const OAuthCallback = lazy(() => import('./pages/OAuthCallback'));
+const TrackPickup = lazy(() => import('./pages/TrackPickup'));
+const Packages = lazy(() => import('./pages/Packages'));
+const PackageDetail = lazy(() => import('./pages/PackageDetail'));
+const NewPackage = lazy(() => import('./pages/NewPackage'));
+const Pickups = lazy(() => import('./pages/Pickups'));
+const SchedulePickup = lazy(() => import('./pages/SchedulePickup'));
+const PickupDetail = lazy(() => import('./pages/PickupDetail'));
+const Rewards = lazy(() => import('./pages/Rewards'));
+const Impact = lazy(() => import('./pages/Impact'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Marketplace = lazy(() => import('./pages/Marketplace'));
+const BuybackOffers = lazy(() => import('./pages/BuybackOffers'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const AdminUsers = lazy(() => import('./pages/AdminUsers'));
+
+// Loading component
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="spinner"></div>
+  </div>
+);
 
 // Protected Route component
 const ProtectedRoute = ({ children, roles }) => {
@@ -54,16 +63,17 @@ const ProtectedRoute = ({ children, roles }) => {
 
 function App() {
   return (
-    <Routes>
-      {/* Public routes */}
-      <Route path="/" element={<Home />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/verify-email" element={<VerifyEmail />} />
-      <Route path="/oauth/callback/google" element={<OAuthCallback />} />
-      <Route path="/track" element={<TrackPickup />} />
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/oauth/callback/google" element={<OAuthCallback />} />
+        <Route path="/track" element={<TrackPickup />} />
 
       {/* Protected routes */}
       <Route path="/dashboard" element={
@@ -152,9 +162,10 @@ function App() {
         </ProtectedRoute>
       } />
 
-      {/* Catch all */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* Catch all */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 }
 
