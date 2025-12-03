@@ -1,6 +1,13 @@
 const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 
-// Create reusable transporter
+// Initialize SendGrid if API key is available
+if (process.env.SENDGRID_API_KEY) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  console.log('✅ SendGrid initialized successfully');
+}
+
+// Create reusable transporter (fallback to nodemailer if SendGrid not available)
 const createTransporter = () => {
   // Check if we have valid SMTP credentials (not placeholders)
   const hasValidSMTP = process.env.SMTP_HOST && 
@@ -43,11 +50,11 @@ const createTransporter = () => {
   }
 
   // Development mode or missing credentials - log to console
-  if (!hasValidSMTP && process.env.NODE_ENV === 'production') {
-    console.warn('⚠️  WARNING: Production mode but SMTP credentials not configured');
-    console.warn('   Please update .env with valid SMTP credentials or set NODE_ENV=development');
+  if (!hasValidSMTP && process.env.NODE_ENV === 'production' && !process.env.SENDGRID_API_KEY) {
+    console.warn('⚠️  WARNING: Production mode but no email service configured');
+    console.warn('   Please set SENDGRID_API_KEY or SMTP credentials');
     console.warn('   Emails will be logged to console only (not sent)');
-  } else {
+  } else if (!process.env.SENDGRID_API_KEY) {
     console.log('ℹ️  Running in DEVELOPMENT mode - emails will be logged to console only');
   }
   
