@@ -84,6 +84,7 @@ function App() {
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/oauth/callback/google" element={<OAuthCallback />} />
         <Route path="/track" element={<TrackPickup />} />
+        <Route path="/track/:trackingCode" element={<TrackPickup />} />
         
         {/* Footer pages - public */}
         <Route path="/about" element={<AboutUs />} />

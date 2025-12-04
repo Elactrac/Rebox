@@ -1,25 +1,28 @@
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { pickupAPI } from '../services/api';
 import { Search, Package, Truck, Clock, MapPin, CheckCircle, Leaf, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const TrackPickup = () => {
   const [searchParams] = useSearchParams();
+  const { trackingCode: routeTrackingCode } = useParams();
   const navigate = useNavigate();
-  const [trackingCode, setTrackingCode] = useState(searchParams.get('code') || '');
+  const [trackingCode, setTrackingCode] = useState(
+    routeTrackingCode || searchParams.get('code') || ''
+  );
   const [pickup, setPickup] = useState(null);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
 
   React.useEffect(() => {
-    const code = searchParams.get('code');
+    const code = routeTrackingCode || searchParams.get('code');
     if (code) {
       setTrackingCode(code);
       handleSearch(code);
     }
     // eslint-disable-next-line
-  }, []);
+  }, [routeTrackingCode]);
 
   const handleSearch = async (code = trackingCode) => {
     if (!code || code.length < 6) {
