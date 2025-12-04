@@ -382,28 +382,20 @@ const Home = () => {
               </div>
               <div className="flex flex-col gap-4">
                 <h3 className="font-bold text-gray-900">Company</h3>
-                {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-                <a className="hover:text-[#13ec13] transition-colors cursor-pointer">About Us</a>
-                {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-                <a className="hover:text-[#13ec13] transition-colors cursor-pointer">Careers</a>
-                {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-                <a className="hover:text-[#13ec13] transition-colors cursor-pointer">Press</a>
+                <Link to="/about" className="hover:text-[#13ec13] transition-colors cursor-pointer">About Us</Link>
+                <Link to="/careers" className="hover:text-[#13ec13] transition-colors cursor-pointer">Careers</Link>
+                <Link to="/press" className="hover:text-[#13ec13] transition-colors cursor-pointer">Press</Link>
               </div>
               <div className="flex flex-col gap-4">
                 <h3 className="font-bold text-gray-900">Resources</h3>
-                {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-                <a className="hover:text-[#13ec13] transition-colors cursor-pointer">FAQ</a>
-                {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-                <a className="hover:text-[#13ec13] transition-colors cursor-pointer">Contact Us</a>
-                {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-                <a className="hover:text-[#13ec13] transition-colors cursor-pointer">Help Center</a>
+                <Link to="/faq" className="hover:text-[#13ec13] transition-colors cursor-pointer">FAQ</Link>
+                <Link to="/contact" className="hover:text-[#13ec13] transition-colors cursor-pointer">Contact Us</Link>
+                <Link to="/help" className="hover:text-[#13ec13] transition-colors cursor-pointer">Help Center</Link>
               </div>
               <div className="flex flex-col gap-4">
                 <h3 className="font-bold text-gray-900">Legal</h3>
-                {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-                <a className="hover:text-[#13ec13] transition-colors cursor-pointer">Terms of Service</a>
-                {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-                <a className="hover:text-[#13ec13] transition-colors cursor-pointer">Privacy Policy</a>
+                <Link to="/terms" className="hover:text-[#13ec13] transition-colors cursor-pointer">Terms of Service</Link>
+                <Link to="/privacy" className="hover:text-[#13ec13] transition-colors cursor-pointer">Privacy Policy</Link>
               </div>
             </div>
             <div className="mt-10 pt-8 border-t border-gray-200 flex justify-between items-center">

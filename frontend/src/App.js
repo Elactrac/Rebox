@@ -31,6 +31,16 @@ const BuybackOffers = lazy(() => import('./pages/BuybackOffers'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminUsers = lazy(() => import('./pages/AdminUsers'));
 
+// Footer pages
+const AboutUs = lazy(() => import('./pages/AboutUs'));
+const Careers = lazy(() => import('./pages/Careers'));
+const Press = lazy(() => import('./pages/Press'));
+const FAQ = lazy(() => import('./pages/FAQ'));
+const ContactUs = lazy(() => import('./pages/ContactUs'));
+const HelpCenter = lazy(() => import('./pages/HelpCenter'));
+const Terms = lazy(() => import('./pages/Terms'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+
 // Loading component
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center">
@@ -74,6 +84,16 @@ function App() {
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/oauth/callback/google" element={<OAuthCallback />} />
         <Route path="/track" element={<TrackPickup />} />
+        
+        {/* Footer pages - public */}
+        <Route path="/about" element={<AboutUs />} />
+        <Route path="/careers" element={<Careers />} />
+        <Route path="/press" element={<Press />} />
+        <Route path="/faq" element={<FAQ />} />
+        <Route path="/contact" element={<ContactUs />} />
+        <Route path="/help" element={<HelpCenter />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
 
       {/* Protected routes */}
       <Route path="/dashboard" element={
