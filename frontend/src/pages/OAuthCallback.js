@@ -114,24 +114,25 @@ const OAuthCallback = () => {
       setStatus('processing');
       setMessage('Creating your account...');
       
-      const redirectUri = `${window.location.origin}/oauth/callback/google`;
+      // Update user's role in the existing user data
+      const updatedUser = { ...userData, role };
       
-      // Re-authenticate with selected role
-      const response = await oauthAPI.googleCode(oauthCode, oauthState, redirectUri, role);
+      // Login with the existing token and updated user data
+      loginWithToken(updatedUser, authToken);
       
-      if (response.data.success) {
-        const { user, token } = response.data.data;
-        
-        loginWithToken(user, token);
-        
-        setStatus('success');
-        setMessage('Account created successfully!');
-        toast.success('Welcome to ReBox!');
-        
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 1500);
-      }
+      // Update the role on the backend (async, don't block UI)
+      oauthAPI.updateRole(role).catch(updateError => {
+        console.error('Failed to update role on backend:', updateError);
+        // Role will be synced on next profile fetch
+      });
+      
+      setStatus('success');
+      setMessage('Account created successfully!');
+      toast.success('Welcome to ReBox!');
+      
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1500);
     } catch (error) {
       console.error('Role selection error:', error);
       setStatus('error');

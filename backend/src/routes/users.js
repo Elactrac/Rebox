@@ -51,7 +51,8 @@ router.put('/profile', authenticate, [
   body('state').optional().trim(),
   body('zipCode').optional().trim(),
   body('companyName').optional().trim(),
-  body('businessType').optional().trim()
+  body('businessType').optional().trim(),
+  body('role').optional().isIn(['INDIVIDUAL', 'BUSINESS', 'RECYCLER', 'ADMIN']).withMessage('Invalid role')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -64,7 +65,7 @@ router.put('/profile', authenticate, [
 
     const allowedFields = [
       'name', 'phone', 'address', 'city', 'state', 
-      'zipCode', 'country', 'companyName', 'businessType', 'avatar'
+      'zipCode', 'country', 'companyName', 'businessType', 'avatar', 'role'
     ];
 
     const updateData = {};

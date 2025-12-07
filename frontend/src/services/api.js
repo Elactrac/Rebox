@@ -63,6 +63,7 @@ export const oauthAPI = {
   googleToken: (idToken, role) => api.post('/oauth/google/token', { idToken, role }),
   googleCode: (code, state, redirectUri, role) => 
     api.post('/oauth/google/code', { code, state, redirect_uri: redirectUri, role }),
+  updateRole: (role) => api.put('/users/profile', { role }),
   linkGoogle: (idToken) => api.post('/oauth/link/google', { idToken }),
   unlinkOAuth: () => api.post('/oauth/unlink'),
 };
