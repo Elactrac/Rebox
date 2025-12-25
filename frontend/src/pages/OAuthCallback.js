@@ -114,17 +114,17 @@ const OAuthCallback = () => {
       setStatus('processing');
       setMessage('Creating your account...');
       
-      // Update user's role in the existing user data
+      // First, set the token in localStorage so the API call can use it
+      localStorage.setItem('token', authToken);
+      
+      // Update the role on the backend
+      await oauthAPI.updateRole(role);
+      
+      // Update user's role in the local data
       const updatedUser = { ...userData, role };
       
-      // Login with the existing token and updated user data
+      // Now login with the updated user data
       loginWithToken(updatedUser, authToken);
-      
-      // Update the role on the backend (async, don't block UI)
-      oauthAPI.updateRole(role).catch(updateError => {
-        console.error('Failed to update role on backend:', updateError);
-        // Role will be synced on next profile fetch
-      });
       
       setStatus('success');
       setMessage('Account created successfully!');
