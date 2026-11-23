@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { packageAPI } from '../services/api';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Sparkles } from 'lucide-react';
 import ImageUpload from '../components/common/ImageUpload';
 import toast from 'react-hot-toast';
 
 const NewPackage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const [images, setImages] = useState([]);
   const [formData, setFormData] = useState({
     type: 'BOX',
@@ -25,6 +26,49 @@ const NewPackage = () => {
       ...formData,
       [name]: name === 'quantity' ? parseInt(value) || 1 : value
     });
+  };
+
+  const handleAnalyze = async () => {
+    if (images.length === 0) {
+      toast.error('Please upload an image first');
+      return;
+    }
+
+    setAnalyzing(true);
+    try {
+      // Convert first image to base64 if it's a File object, or use as is if string
+      const imageToAnalyze = images[0];
+      let base64Image = imageToAnalyze;
+
+      if (imageToAnalyze instanceof File) {
+        base64Image = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(imageToAnalyze);
+        });
+      }
+
+      const response = await packageAPI.analyzeImage(base64Image);
+      const analysis = response.data.data;
+
+      if (analysis) {
+        setFormData(prev => ({
+          ...prev,
+          type: analysis.type?.toUpperCase() || prev.type,
+          condition: analysis.condition?.toUpperCase() || prev.condition,
+          weight: analysis.estimatedWeightInKg || analysis.weight || prev.weight,
+        }));
+
+        let msg = 'Package analyzed!';
+        if (analysis.type) msg += ` Identified as ${analysis.type}.`;
+        toast.success(msg);
+      }
+    } catch (error) {
+      console.error('Analysis failed:', error);
+      toast.error('AI analysis failed. Please try manual entry.');
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -194,8 +238,22 @@ const NewPackage = () => {
 
         {/* Images */}
         <div className="form-section">
-          <h3>Photos</h3>
-          <p className="section-description">Add photos to help recyclers and businesses see your packaging</p>
+          <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <div>
+              <h3>Photos</h3>
+              <p className="section-description" style={{ marginBottom: 0 }}>Add photos to help recyclers and businesses see your packaging</p>
+            </div>
+            <button
+              type="button"
+              className="btn-ai-analyze"
+              onClick={handleAnalyze}
+              disabled={analyzing || images.length === 0}
+              title="Upload a photo effectively to use AI auto-fill"
+            >
+              <Sparkles size={16} />
+              {analyzing ? 'Analyzing...' : 'Auto-fill with AI'}
+            </button>
+          </div>
           <ImageUpload
             images={images}
             onImagesChange={setImages}
@@ -370,6 +428,33 @@ const NewPackage = () => {
           .type-grid {
             grid-template-columns: repeat(2, 1fr);
           }
+        }
+        
+        .btn-ai-analyze {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+          color: white;
+          border: none;
+          padding: 0.5rem 1rem;
+          border-radius: 2rem;
+          font-size: 0.875rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+          box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.2);
+        }
+
+        .btn-ai-analyze:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 6px 8px -1px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-ai-analyze:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+          filter: grayscale(1);
         }
       `}</style>
     </div>

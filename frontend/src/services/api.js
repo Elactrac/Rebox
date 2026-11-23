@@ -28,11 +28,11 @@ api.interceptors.response.use(
         method: error.config?.method,
         message: error.response?.data?.message
       });
-      
+
       // Don't redirect if we're on the OAuth callback page
       const isOAuthCallback = window.location.pathname.includes('/oauth/callback');
       const isLoginPage = window.location.pathname === '/login';
-      
+
       if (!isOAuthCallback && !isLoginPage) {
         console.log('🔄 Redirecting to login due to 401');
         localStorage.removeItem('token');
@@ -61,7 +61,7 @@ export const oauthAPI = {
   getConfig: () => api.get('/oauth/config'),
   getGoogleUrl: (redirectUri) => api.get('/oauth/google/url', { params: { redirect_uri: redirectUri } }),
   googleToken: (idToken, role) => api.post('/oauth/google/token', { idToken, role }),
-  googleCode: (code, state, redirectUri, role) => 
+  googleCode: (code, state, redirectUri, role) =>
     api.post('/oauth/google/code', { code, state, redirect_uri: redirectUri, role }),
   updateRole: (role) => api.put('/users/profile', { role }),
   linkGoogle: (idToken) => api.post('/oauth/link/google', { idToken }),
@@ -86,6 +86,7 @@ export const packageAPI = {
   getStats: () => api.get('/packages/stats/summary'),
   search: (query, params = {}) => api.get('/packages/search', { params: { q: query, ...params } }),
   getFilterOptions: () => api.get('/packages/filters/options'),
+  analyzeImage: (image) => api.post('/packages/analyze', { image }),
 };
 
 // Pickup API
@@ -177,29 +178,29 @@ export const adminAPI = {
 
 // QR Code API
 export const qrAPI = {
-  getPickupQR: (trackingCode, format = 'dataurl') => 
+  getPickupQR: (trackingCode, format = 'dataurl') =>
     api.get(`/qr/pickup/${trackingCode}`, { params: { format } }),
-  getPackageQR: (id, format = 'dataurl') => 
+  getPackageQR: (id, format = 'dataurl') =>
     api.get(`/qr/package/${id}`, { params: { format } }),
-  getBatchQR: (trackingCodes) => 
+  getBatchQR: (trackingCodes) =>
     api.post('/qr/batch', { trackingCodes }),
-  getShippingLabel: (trackingCode) => 
+  getShippingLabel: (trackingCode) =>
     api.get(`/qr/label/${trackingCode}`),
 };
 
 // Export API
 export const exportAPI = {
-  packagesCSV: (params) => 
+  packagesCSV: (params) =>
     api.get('/export/packages/csv', { params, responseType: 'blob' }),
-  pickupsCSV: (params) => 
+  pickupsCSV: (params) =>
     api.get('/export/pickups/csv', { params, responseType: 'blob' }),
-  transactionsCSV: (params) => 
+  transactionsCSV: (params) =>
     api.get('/export/transactions/csv', { params, responseType: 'blob' }),
-  impactCSV: () => 
+  impactCSV: () =>
     api.get('/export/impact/csv', { responseType: 'blob' }),
-  userDataJSON: () => 
+  userDataJSON: () =>
     api.get('/export/user-data/json', { responseType: 'blob' }),
-  adminReport: (params) => 
+  adminReport: (params) =>
     api.get('/export/admin/report', { params, responseType: 'blob' }),
 };
 
