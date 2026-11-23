@@ -6,7 +6,7 @@
 // In-memory store for rate limiting (use Redis in production for distributed systems)
 const rateLimitStore = new Map();
 
-// Clean up expired entries every minute
+// Clean up expired entries every minute (unref so it never keeps the process alive)
 setInterval(() => {
   const now = Date.now();
   for (const [key, data] of rateLimitStore.entries()) {
@@ -14,7 +14,9 @@ setInterval(() => {
       rateLimitStore.delete(key);
     }
   }
-}, 60000);
+}, 60000).unref();
+
+let limiterCount = 0;
 
 /**
  * Create a rate limiter with custom options
@@ -24,6 +26,7 @@ setInterval(() => {
  * @param {string} options.message - Error message when limit exceeded
  * @param {boolean} options.skipSuccessfulRequests - Don't count successful requests
  * @param {function} options.keyGenerator - Custom key generator function
+ * @param {string} options.name - Namespace for this limiter's counters
  */
 const createRateLimiter = (options = {}) => {
   const {
@@ -34,10 +37,14 @@ const createRateLimiter = (options = {}) => {
     keyGenerator = (req) => req.ip || req.connection.remoteAddress,
     skipFailedRequests = false,
     headers = true,
+    name = `limiter${++limiterCount}`,
   } = options;
 
   return (req, res, next) => {
-    const key = keyGenerator(req);
+    // Namespace by limiter: otherwise every limiter shares one counter per IP,
+    // and ordinary browsing (counted by the global limiter) exhausts the
+    // 3-per-hour registration/password-reset budgets.
+    const key = `${name}:${keyGenerator(req)}`;
     const now = Date.now();
 
     let record = rateLimitStore.get(key);
@@ -91,6 +98,7 @@ const createRateLimiter = (options = {}) => {
 
 // General API rate limiter - 100 requests per minute
 const generalLimiter = createRateLimiter({
+  name: 'general',
   windowMs: 60000,
   maxRequests: 100,
   message: 'Too many requests from this IP, please try again after a minute.',
@@ -98,6 +106,7 @@ const generalLimiter = createRateLimiter({
 
 // Strict rate limiter for authentication endpoints - 5 requests per minute
 const authLimiter = createRateLimiter({
+  name: 'auth',
   windowMs: 60000,
   maxRequests: 5,
   message: 'Too many authentication attempts, please try again after a minute.',
@@ -106,6 +115,7 @@ const authLimiter = createRateLimiter({
 
 // Login rate limiter - 10 attempts per 15 minutes
 const loginLimiter = createRateLimiter({
+  name: 'login',
   windowMs: 15 * 60000, // 15 minutes
   maxRequests: 10,
   message: 'Too many login attempts, please try again after 15 minutes.',
@@ -113,12 +123,13 @@ const loginLimiter = createRateLimiter({
     // Rate limit by IP + email combination for login
     const email = req.body?.email || 'unknown';
     const ip = req.ip || req.connection.remoteAddress;
-    return `login:${ip}:${email}`;
+    return `${ip}:${email}`;
   },
 });
 
 // Registration rate limiter - 3 registrations per hour per IP
 const registrationLimiter = createRateLimiter({
+  name: 'registration',
   windowMs: 60 * 60000, // 1 hour
   maxRequests: 3,
   message: 'Too many accounts created from this IP, please try again after an hour.',
@@ -126,6 +137,7 @@ const registrationLimiter = createRateLimiter({
 
 // Password reset rate limiter - 3 requests per hour
 const passwordResetLimiter = createRateLimiter({
+  name: 'passwordReset',
   windowMs: 60 * 60000, // 1 hour
   maxRequests: 3,
   message: 'Too many password reset requests, please try again after an hour.',
@@ -133,6 +145,7 @@ const passwordResetLimiter = createRateLimiter({
 
 // Upload rate limiter - 20 uploads per hour
 const uploadLimiter = createRateLimiter({
+  name: 'upload',
   windowMs: 60 * 60000, // 1 hour
   maxRequests: 20,
   message: 'Upload limit reached, please try again after an hour.',
@@ -140,6 +153,7 @@ const uploadLimiter = createRateLimiter({
 
 // API-intensive operations (reports, exports) - 10 per hour
 const heavyOperationLimiter = createRateLimiter({
+  name: 'heavyOperation',
   windowMs: 60 * 60000, // 1 hour
   maxRequests: 10,
   message: 'Too many resource-intensive requests, please try again later.',
@@ -147,6 +161,7 @@ const heavyOperationLimiter = createRateLimiter({
 
 // Burst limiter for spam prevention - 10 requests per 10 seconds
 const burstLimiter = createRateLimiter({
+  name: 'burst',
   windowMs: 10000, // 10 seconds
   maxRequests: 10,
   message: 'Slow down! Too many requests in a short time.',

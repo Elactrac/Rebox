@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 import { Users, Building2, Recycle } from 'lucide-react';
 
+// Full class strings (not `border-${color}-500`) so Tailwind's purge keeps them.
+const SELECTED_STYLES = {
+  green: { card: 'border-green-500 bg-green-50 shadow-lg', iconBg: 'bg-green-100', icon: 'text-green-600' },
+  blue: { card: 'border-blue-500 bg-blue-50 shadow-lg', iconBg: 'bg-blue-100', icon: 'text-blue-600' },
+  purple: { card: 'border-purple-500 bg-purple-50 shadow-lg', iconBg: 'bg-purple-100', icon: 'text-purple-600' },
+};
+
 const RoleSelection = ({ onSelect, userName }) => {
   const [selectedRole, setSelectedRole] = useState(null);
 
@@ -54,6 +61,7 @@ const RoleSelection = ({ onSelect, userName }) => {
           {roles.map((role) => {
             const Icon = role.icon;
             const isSelected = selectedRole === role.value;
+            const styles = SELECTED_STYLES[role.color];
             
             return (
               <button
@@ -64,7 +72,7 @@ const RoleSelection = ({ onSelect, userName }) => {
                   hover:shadow-lg hover:scale-105
                   ${
                     isSelected
-                      ? `border-${role.color}-500 bg-${role.color}-50 shadow-lg`
+                      ? styles.card
                       : 'border-gray-200 hover:border-gray-300'
                   }
                 `}
@@ -82,9 +90,9 @@ const RoleSelection = ({ onSelect, userName }) => {
                 <div className="flex flex-col items-center text-center">
                   <div className={`
                     w-16 h-16 rounded-full flex items-center justify-center mb-4
-                    ${isSelected ? `bg-${role.color}-100` : 'bg-gray-100'}
+                    ${isSelected ? styles.iconBg : 'bg-gray-100'}
                   `}>
-                    <Icon className={`w-8 h-8 ${isSelected ? `text-${role.color}-600` : 'text-gray-600'}`} />
+                    <Icon className={`w-8 h-8 ${isSelected ? styles.icon : 'text-gray-600'}`} />
                   </div>
                   
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">

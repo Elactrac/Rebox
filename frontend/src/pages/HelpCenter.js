@@ -156,7 +156,7 @@ const HelpCenter = () => {
           <div className="popular-searches">
             <span>Popular:</span>
             {popularArticles.slice(0, 3).map((article, index) => (
-              <a key={index} href="#">{article}</a>
+              <button key={index} type="button" onClick={() => setSearchQuery(article)}>{article}</button>
             ))}
           </div>
         </div>
@@ -298,14 +298,19 @@ const HelpCenter = () => {
           opacity: 0.9;
         }
 
-        .popular-searches a {
+        .popular-searches button {
+          background: none;
+          border: 0;
+          padding: 0;
+          font: inherit;
+          cursor: pointer;
           color: white;
           text-decoration: underline;
           opacity: 0.9;
           transition: opacity 0.3s;
         }
 
-        .popular-searches a:hover {
+        .popular-searches button:hover {
           opacity: 1;
         }
 

@@ -1,4 +1,13 @@
 require('dotenv').config();
+
+// Refuse to boot with a missing or placeholder JWT secret.
+try {
+  require('./config/jwt').assertJwtSecret();
+} catch (err) {
+  console.error(`\n[config] ${err.message}\n`);
+  process.exit(1);
+}
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -21,8 +30,6 @@ const uploadRoutes = require('./routes/upload');
 const adminRoutes = require('./routes/admin');
 const qrRoutes = require('./routes/qr');
 const exportRoutes = require('./routes/export');
-const seedRoutes = require('./routes/seed');
-const testRoutes = require('./routes/test');
 
 const app = express();
 const server = http.createServer(app);
@@ -89,8 +96,6 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/qr', qrRoutes);
 app.use('/api/export', exportRoutes);
-app.use('/api/seed', seedRoutes);
-app.use('/api/test', testRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

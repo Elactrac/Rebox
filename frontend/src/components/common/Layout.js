@@ -16,6 +16,7 @@ import {
   Shield,
   Users
 } from 'lucide-react';
+import ChatWidget from './ChatWidget';
 
 const Layout = ({ children }) => {
   const { user, logout } = useAuth();
@@ -138,6 +139,8 @@ const Layout = ({ children }) => {
       <main className="main-content">
         {children}
       </main>
+
+      <ChatWidget />
 
       <style>{`
         .layout {

@@ -1,8 +1,7 @@
 const jwt = require('jsonwebtoken');
 
 // Use shared Prisma instance from req.prisma (set in index.js)
-// Fallback JWT secret - must match the one used in auth.js for token generation
-const JWT_SECRET = process.env.JWT_SECRET || 'rebox-default-secret-key-2024-change-in-production';
+const { getJwtSecret } = require('../config/jwt');
 
 // Authenticate JWT token
 const authenticate = async (req, res, next) => {
@@ -17,7 +16,7 @@ const authenticate = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, getJwtSecret());
     
     // Use shared Prisma instance from req
     const prisma = req.prisma;
@@ -82,7 +81,7 @@ const optionalAuth = async (req, res, next) => {
     
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1];
-      const decoded = jwt.verify(token, JWT_SECRET);
+      const decoded = jwt.verify(token, getJwtSecret());
       
       // Use shared Prisma instance from req
       const prisma = req.prisma;

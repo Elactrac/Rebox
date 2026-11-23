@@ -2,6 +2,11 @@ const request = require('supertest');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+// Never send real email from tests
+jest.mock('../../src/services/email', () => ({
+  sendEmail: jest.fn().mockResolvedValue(true)
+}));
+
 // Mock Prisma
 jest.mock('@prisma/client', () => {
   const mockPrisma = {
@@ -29,15 +34,20 @@ const prisma = new PrismaClient();
 // Import app after mocking
 const express = require('express');
 const authRoutes = require('../../src/routes/auth');
+const { clearAllRateLimits } = require('../../src/middleware/rateLimiter');
 
 // Create test app
 const app = express();
 app.use(express.json());
+// Routes read the shared client from req.prisma (set in src/index.js)
+app.use((req, res, next) => { req.prisma = prisma; next(); });
 app.use('/api/auth', authRoutes);
 
 describe('Auth Routes', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Rate-limit counters are module-level; reset so tests don't trip each other's limits
+    clearAllRateLimits();
   });
 
   describe('POST /api/auth/register', () => {

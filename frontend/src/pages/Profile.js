@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { userAPI, authAPI, oauthAPI } from '../services/api';
-import { User, MapPin, Building, Lock, Save, Mail, AlertCircle, Link as LinkIcon, Unlink } from 'lucide-react';
-import GoogleSignInButton from '../components/common/GoogleSignInButton';
+import { User, MapPin, Building, Lock, Save, AlertCircle, Link as LinkIcon, Unlink } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Profile = () => {

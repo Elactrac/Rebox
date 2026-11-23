@@ -1,5 +1,6 @@
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
+const { getJwtSecret } = require('../config/jwt');
 
 let io;
 const userSockets = new Map(); // userId -> Set of socket ids
@@ -9,7 +10,7 @@ const initializeSocket = (server) => {
   const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3000')
     .split(',')
     .map(origin => origin.trim());
-  
+
   io = new Server(server, {
     cors: {
       origin: allowedOrigins,
@@ -26,7 +27,7 @@ const initializeSocket = (server) => {
     }
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, getJwtSecret());
       socket.userId = decoded.userId;
       next();
     } catch (err) {
@@ -55,6 +56,30 @@ const initializeSocket = (server) => {
 
     socket.on('leave:pickup', (pickupId) => {
       socket.leave(`pickup:${pickupId}`);
+    });
+
+    socket.on('leave:pickup', (pickupId) => {
+      socket.leave(`pickup:${pickupId}`);
+    });
+
+    // Chat events
+    socket.on('chat:join_room', (roomId) => {
+      socket.join(`chat:${roomId}`); // roomId could be pickupId or a unique chat ID
+      console.log(`User ${userId} joined chat room: ${roomId}`);
+    });
+
+    socket.on('chat:send_message', (data) => {
+      // data: { roomId, message, type: 'text'|'image' }
+      const roomId = data.roomId;
+
+      // Broadcast to everyone in room EXCLUDING sender (optimistic UI handles sender)
+      // Or include sender if you want confirmation. Let's exclude for now but typically you might emit 'chat:message' to room.
+      socket.to(`chat:${roomId}`).emit('chat:receive_message', {
+        id: Date.now().toString(), // simplistic ID
+        senderId: userId,
+        text: data.message,
+        timestamp: new Date().toISOString(),
+      });
     });
 
     // Handle read receipts
@@ -132,16 +157,16 @@ const NotificationTypes = {
   PICKUP_IN_TRANSIT: 'pickup:in_transit',
   PICKUP_COMPLETED: 'pickup:completed',
   PICKUP_CANCELLED: 'pickup:cancelled',
-  
+
   // Reward related
   REWARD_EARNED: 'reward:earned',
   LEVEL_UP: 'reward:level_up',
-  
+
   // Offer related
   OFFER_RECEIVED: 'offer:received',
   OFFER_ACCEPTED: 'offer:accepted',
   OFFER_REJECTED: 'offer:rejected',
-  
+
   // System
   SYSTEM_ANNOUNCEMENT: 'system:announcement'
 };

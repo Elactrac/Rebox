@@ -48,6 +48,8 @@ jest.mock('../../src/middleware/auth', () => ({
 // Create test app
 const app = express();
 app.use(express.json());
+// Routes read the shared client from req.prisma (set in src/index.js)
+app.use((req, res, next) => { req.prisma = prisma; next(); });
 app.use('/api/packages', packageRoutes);
 
 describe('Package Routes', () => {
@@ -120,6 +122,11 @@ describe('Package Routes', () => {
   });
 
   describe('GET /api/packages', () => {
+    beforeEach(() => {
+      // The list route also returns sum/avg stats for the filtered results
+      prisma.package.aggregate.mockResolvedValue({ _sum: {}, _avg: {} });
+    });
+
     it('should return list of packages', async () => {
       const mockPackages = [
         { id: 'pkg-1', type: 'BOX', status: 'LISTED', user: { id: 'user-1', name: 'John' } },

@@ -1,6 +1,17 @@
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 
+// The seed creates accounts with well-known passwords (admin123, etc.).
+// Never let it run against a real deployment by accident.
+if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DEMO_SEED !== 'true') {
+  console.error(
+    '\n[seed] Refusing to seed demo accounts with NODE_ENV=production.\n' +
+    '       These accounts use public passwords. For a local Docker demo, run:\n' +
+    '       docker-compose exec -e ALLOW_DEMO_SEED=true backend npm run seed\n'
+  );
+  process.exit(1);
+}
+
 const prisma = new PrismaClient();
 
 async function main() {
@@ -9,10 +20,10 @@ async function main() {
   // Create admin user
   const adminPassword = await bcrypt.hash('admin123', 12);
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@rebox.com' },
+    where: { email: 'admin@example.com' },
     update: {},
     create: {
-      email: 'admin@rebox.com',
+      email: 'admin@example.com',
       password: adminPassword,
       name: 'Admin User',
       role: 'ADMIN',
@@ -157,7 +168,7 @@ async function main() {
 
   console.log('Seeding completed!');
   console.log('\nTest accounts:');
-  console.log('  Admin: admin@rebox.com / admin123');
+  console.log('  Admin: admin@example.com / admin123');
   console.log('  User: user@example.com / user123');
   console.log('  Business: brand@example.com / business123');
   console.log('  Recycler: recycler@example.com / recycler123');

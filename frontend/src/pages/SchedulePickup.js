@@ -35,6 +35,7 @@ const SchedulePickup = () => {
     if (formData.city && formData.state) {
       fetchRecyclers();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch only when location changes
   }, [formData.city, formData.state]);
 
   const fetchAvailablePackages = async () => {

@@ -4,7 +4,7 @@ This file contains the SQL commands to create all database tables, enums, indexe
 
 ## Instructions
 
-1. Go to your Supabase Dashboard: https://supabase.com/dashboard/project/qxowgfdreqzqtbsoeqlu
+1. Go to your Supabase Dashboard: https://supabase.com/dashboard (open your project)
 2. Click on **SQL Editor** in the left sidebar
 3. Click **New query**
 4. Copy the entire SQL below and paste it into the editor

@@ -15,8 +15,6 @@ const OAuthCallback = () => {
   const [showRoleSelection, setShowRoleSelection] = useState(false);
   const [userData, setUserData] = useState(null);
   const [authToken, setAuthToken] = useState(null);
-  const [oauthCode, setOauthCode] = useState(null);
-  const [oauthState, setOauthState] = useState(null);
   const hasProcessed = useRef(false); // Persist across re-renders
 
   useEffect(() => {
@@ -54,26 +52,25 @@ const OAuthCallback = () => {
           // Continue anyway as Google provides security
         }
         sessionStorage.removeItem('oauth_state');
+        // Role picked on the register page before redirecting to Google
+        const chosenRole = sessionStorage.getItem('oauth_role') || undefined;
+        sessionStorage.removeItem('oauth_role');
         
         const redirectUri = `${window.location.origin}/oauth/callback/google`;
         console.log('🔄 Calling backend with OAuth code:', { codeLength: code.length, redirectUri });
         
-        // First, try without role for new users
-        const response = await oauthAPI.googleCode(code, state, redirectUri);
+        const response = await oauthAPI.googleCode(code, state, redirectUri, chosenRole);
         console.log('📥 Backend response:', response.data);
         
         if (response.data.success) {
-          const { user, token, isNewUser } = response.data.data;
+          const { user, token, isNewUser, needsRole } = response.data.data;
           
           console.log('👤 User data received:', { email: user.email, id: user.id, isNewUser });
-          console.log('🎫 Token received:', token.substring(0, 30) + '...');
           
-          // If new user, show role selection
-          if (isNewUser) {
+          // New account with no role chosen yet (signed up from the login page)
+          if (needsRole) {
             setUserData(user);
             setAuthToken(token);
-            setOauthCode(code);
-            setOauthState(state);
             setShowRoleSelection(true);
             setStatus('role_selection');
             setMessage('Choose your account type');
@@ -89,7 +86,7 @@ const OAuthCallback = () => {
           setStatus('success');
           setMessage('Login successful!');
           
-          toast.success('Welcome back!');
+          toast.success(isNewUser ? 'Welcome to ReBox!' : 'Welcome back!');
           
           setTimeout(() => {
             navigate('/dashboard');
@@ -117,11 +114,8 @@ const OAuthCallback = () => {
       // First, set the token in localStorage so the API call can use it
       localStorage.setItem('token', authToken);
       
-      // Update the role on the backend
-      await oauthAPI.updateRole(role);
-      
-      // Update user's role in the local data
-      const updatedUser = { ...userData, role };
+      const response = await oauthAPI.updateRole(role);
+      const updatedUser = response.data?.data || { ...userData, role };
       
       // Now login with the updated user data
       loginWithToken(updatedUser, authToken);
@@ -134,10 +128,11 @@ const OAuthCallback = () => {
         navigate('/dashboard');
       }, 1500);
     } catch (error) {
+      // The account already exists; don't strand the user on this screen.
       console.error('Role selection error:', error);
-      setStatus('error');
-      setMessage('Failed to create account. Please try again.');
-      toast.error('Failed to create account');
+      loginWithToken(userData, authToken);
+      toast.error(error.response?.data?.message || "Couldn't save your account type. You can ask an admin to change it.");
+      navigate('/dashboard');
     }
   };
 

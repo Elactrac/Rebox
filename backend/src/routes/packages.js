@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult, query } = require('express-validator');
 const { PrismaClient } = require('@prisma/client');
 const { authenticate, optionalAuth } = require('../middleware/auth');
+const { analyzePackagingImage } = require('../services/aiService');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -40,6 +41,34 @@ const calculatePackageMetrics = (type, condition, quantity, weight) => {
   };
 };
 
+// @route   POST /api/packages/analyze
+// @desc    Analyze packaging image using AI
+// @access  Private
+router.post('/analyze', authenticate, [
+  body('image').notEmpty().withMessage('Image is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+
+    const { image } = req.body;
+    const analysis = await analyzePackagingImage(image);
+
+    res.json({
+      success: true,
+      data: analysis
+    });
+  } catch (error) {
+    console.error('AI Analysis Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to analyze image'
+    });
+  }
+});
+
 // @route   POST /api/packages
 // @desc    Create a new package listing
 // @access  Private
@@ -54,9 +83,9 @@ router.post('/', authenticate, [
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ 
-        success: false, 
-        errors: errors.array() 
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
       });
     }
 
@@ -89,9 +118,9 @@ router.post('/', authenticate, [
     });
   } catch (error) {
     console.error('Create package error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to create package' 
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create package'
     });
   }
 });
@@ -101,11 +130,11 @@ router.post('/', authenticate, [
 // @access  Public (with optional auth)
 router.get('/', optionalAuth, async (req, res) => {
   try {
-    const { 
-      page = 1, 
-      limit = 20, 
-      type, 
-      condition, 
+    const {
+      page = 1,
+      limit = 20,
+      type,
+      condition,
       status,
       minValue,
       maxValue,
@@ -132,7 +161,7 @@ router.get('/', optionalAuth, async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const where = {};
-    
+
     // Filter by user's own packages
     if (myPackages === 'true' && req.user) {
       where.userId = req.user.id;
@@ -155,7 +184,7 @@ router.get('/', optionalAuth, async (req, res) => {
 
     // Single type filter
     if (type) where.type = type;
-    
+
     // Multiple types filter
     if (types) {
       const typeList = types.split(',').filter(t => ['BOX', 'BOTTLE', 'CONTAINER', 'BAG', 'OTHER'].includes(t));
@@ -166,7 +195,7 @@ router.get('/', optionalAuth, async (req, res) => {
 
     // Single condition filter
     if (condition) where.condition = condition;
-    
+
     // Multiple conditions filter
     if (conditions) {
       const conditionList = conditions.split(',').filter(c => ['EXCELLENT', 'GOOD', 'FAIR', 'POOR'].includes(c));
@@ -177,7 +206,7 @@ router.get('/', optionalAuth, async (req, res) => {
 
     // Single status filter
     if (status) where.status = status;
-    
+
     // Multiple statuses filter
     if (statuses) {
       const statusList = statuses.split(',').filter(s => ['LISTED', 'SCHEDULED', 'PICKED_UP', 'PROCESSING', 'RECYCLED', 'REUSED'].includes(s));
@@ -281,9 +310,9 @@ router.get('/', optionalAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('Get packages error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to get packages' 
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get packages'
     });
   }
 });
@@ -493,9 +522,9 @@ router.get('/:id', optionalAuth, async (req, res) => {
     });
 
     if (!package_) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Package not found' 
+      return res.status(404).json({
+        success: false,
+        message: 'Package not found'
       });
     }
 
@@ -505,9 +534,9 @@ router.get('/:id', optionalAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('Get package error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to get package' 
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get package'
     });
   }
 });
@@ -522,30 +551,30 @@ router.put('/:id', authenticate, async (req, res) => {
     });
 
     if (!package_) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Package not found' 
+      return res.status(404).json({
+        success: false,
+        message: 'Package not found'
       });
     }
 
     if (package_.userId !== req.user.id && req.user.role !== 'ADMIN') {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Not authorized to update this package' 
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to update this package'
       });
     }
 
     // Can't update if already picked up
     if (['PICKED_UP', 'PROCESSING', 'RECYCLED', 'REUSED'].includes(package_.status)) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Cannot update package after pickup' 
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot update package after pickup'
       });
     }
 
     const allowedFields = ['type', 'condition', 'quantity', 'weight', 'brand', 'description', 'dimensions', 'images'];
     const updateData = {};
-    
+
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
         updateData[field] = req.body[field];
@@ -577,9 +606,9 @@ router.put('/:id', authenticate, async (req, res) => {
     });
   } catch (error) {
     console.error('Update package error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to update package' 
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update package'
     });
   }
 });
@@ -594,23 +623,23 @@ router.delete('/:id', authenticate, async (req, res) => {
     });
 
     if (!package_) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Package not found' 
+      return res.status(404).json({
+        success: false,
+        message: 'Package not found'
       });
     }
 
     if (package_.userId !== req.user.id && req.user.role !== 'ADMIN') {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Not authorized to delete this package' 
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to delete this package'
       });
     }
 
     if (package_.status !== 'LISTED') {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Can only delete packages with LISTED status' 
+      return res.status(400).json({
+        success: false,
+        message: 'Can only delete packages with LISTED status'
       });
     }
 
@@ -624,9 +653,9 @@ router.delete('/:id', authenticate, async (req, res) => {
     });
   } catch (error) {
     console.error('Delete package error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to delete package' 
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete package'
     });
   }
 });
@@ -648,8 +677,8 @@ router.get('/stats/summary', authenticate, async (req, res) => {
     const totals = await prisma.package.aggregate({
       where: { userId },
       _count: { id: true },
-      _sum: { 
-        estimatedValue: true, 
+      _sum: {
+        estimatedValue: true,
         weight: true,
         co2Saved: true,
         waterSaved: true
@@ -662,9 +691,9 @@ router.get('/stats/summary', authenticate, async (req, res) => {
     });
   } catch (error) {
     console.error('Get package stats error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to get package stats' 
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get package stats'
     });
   }
 });

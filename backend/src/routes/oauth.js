@@ -16,13 +16,22 @@ const {
 } = require('../services/oauth');
 const { authLimiter } = require('../middleware/rateLimiter');
 const { verifyRecaptchaV2 } = require('../middleware/recaptcha');
+const { getJwtSecret } = require('../config/jwt');
+const { authenticate } = require('../middleware/auth');
+
+// Roles a user may pick for themselves. ADMIN is never self-assignable.
+const SELF_SERVE_ROLES = ['INDIVIDUAL', 'BUSINESS', 'RECYCLER'];
+const sanitizeRole = (role) => (SELF_SERVE_ROLES.includes(role) ? role : null);
+
+// How long after sign-up a Google user may still choose their account type.
+const ROLE_CHOICE_WINDOW_MS = 60 * 60 * 1000;
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
 // Generate JWT token
 const generateToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, {
+  return jwt.sign({ userId }, getJwtSecret(), {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   });
 };
@@ -43,7 +52,7 @@ setInterval(() => {
       stateStore.delete(key);
     }
   }
-}, 5 * 60 * 1000);
+}, 5 * 60 * 1000).unref();
 
 // @route   GET /api/oauth/config
 // @desc    Get OAuth provider configuration
@@ -153,7 +162,7 @@ router.post('/google/token', async (req, res) => {
           providerId: googleUser.providerId,
           providerData: googleUser.providerData,
           isVerified: googleUser.isVerified,
-          role: role || 'INDIVIDUAL',
+          role: sanitizeRole(role) || 'INDIVIDUAL',
           rewards: {
             create: {
               totalPoints: 0,
@@ -295,7 +304,7 @@ router.post('/google/code', async (req, res) => {
           providerId: googleUser.providerId,
           providerData: googleUser.providerData,
           isVerified: googleUser.isVerified,
-          role: role || 'INDIVIDUAL',
+          role: sanitizeRole(role) || 'INDIVIDUAL',
           rewards: {
             create: {
               totalPoints: 0,
@@ -346,6 +355,9 @@ router.post('/google/code', async (req, res) => {
         user: userWithoutSensitive,
         token,
         isNewUser,
+        // True when the account was created without an explicit role choice
+        // (e.g. via "Sign in with Google" on the login page).
+        needsRole: isNewUser && !sanitizeRole(role),
       },
     });
   } catch (error) {
@@ -360,7 +372,7 @@ router.post('/google/code', async (req, res) => {
 // @route   POST /api/oauth/link/google
 // @desc    Link Google account to existing user
 // @access  Private
-router.post('/link/google', async (req, res) => {
+router.post('/link/google', authenticate, async (req, res) => {
   try {
     const { idToken } = req.body;
     const userId = req.user?.id;
@@ -438,7 +450,7 @@ router.post('/link/google', async (req, res) => {
 // @route   POST /api/oauth/unlink
 // @desc    Unlink OAuth provider from account
 // @access  Private
-router.post('/unlink', async (req, res) => {
+router.post('/unlink', authenticate, async (req, res) => {
   try {
     const userId = req.user?.id;
 
@@ -495,6 +507,52 @@ router.post('/unlink', async (req, res) => {
       success: false,
       message: 'Failed to unlink OAuth account',
     });
+  }
+});
+
+// @route   POST /api/oauth/role
+// @desc    Let a newly created Google user choose their account type once
+// @access  Private
+router.post('/role', authenticate, async (req, res) => {
+  try {
+    const role = sanitizeRole(req.body.role);
+    if (!role) {
+      return res.status(400).json({ success: false, message: 'Invalid role' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    const isFreshGoogleAccount =
+      user &&
+      user.provider === 'google' &&
+      user.role !== 'ADMIN' &&
+      Date.now() - new Date(user.createdAt).getTime() < ROLE_CHOICE_WINDOW_MS;
+
+    if (!isFreshGoogleAccount) {
+      return res.status(403).json({
+        success: false,
+        message: 'Account type can only be chosen right after signing up. Contact an admin to change it.',
+      });
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data: { role },
+      include: { rewards: true, impactStats: true },
+    });
+
+    const {
+      password: _,
+      resetToken,
+      resetExpires,
+      verifyToken,
+      verifyExpires,
+      ...userWithoutSensitive
+    } = updated;
+
+    res.json({ success: true, message: 'Account type saved', data: userWithoutSensitive });
+  } catch (error) {
+    console.error('Set OAuth role error:', error);
+    res.status(500).json({ success: false, message: 'Failed to save account type' });
   }
 });
 

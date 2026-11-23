@@ -51,8 +51,7 @@ router.put('/profile', authenticate, [
   body('state').optional().trim(),
   body('zipCode').optional().trim(),
   body('companyName').optional().trim(),
-  body('businessType').optional().trim(),
-  body('role').optional().isIn(['INDIVIDUAL', 'BUSINESS', 'RECYCLER', 'ADMIN']).withMessage('Invalid role')
+  body('businessType').optional().trim()
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -63,9 +62,11 @@ router.put('/profile', authenticate, [
       });
     }
 
+    // 'role' is deliberately not editable here: any user could make
+    // themselves ADMIN. Admins change roles via the admin routes.
     const allowedFields = [
-      'name', 'phone', 'address', 'city', 'state', 
-      'zipCode', 'country', 'companyName', 'businessType', 'avatar', 'role'
+      'name', 'phone', 'address', 'city', 'state',
+      'zipCode', 'country', 'companyName', 'businessType', 'avatar'
     ];
 
     const updateData = {};

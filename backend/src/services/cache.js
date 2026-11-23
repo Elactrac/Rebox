@@ -77,7 +77,7 @@ const cleanupInMemoryCache = () => {
 };
 
 // Run cleanup every minute
-setInterval(cleanupInMemoryCache, 60000);
+setInterval(cleanupInMemoryCache, 60000).unref();
 
 /**
  * Get value from cache
