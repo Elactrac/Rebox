@@ -29,20 +29,21 @@ const GoogleSignInButton = ({
   text = 'Continue with Google',
   className = '',
   disabled = false,
-  role = 'INDIVIDUAL'
+  role // set on the register page; omitted on login
 }) => {
   const [loading, setLoading] = useState(false);
-  const [oauthEnabled, setOauthEnabled] = useState(false);
+  // Optimistic: a sleeping backend (free hosting cold start) shouldn't hide
+  // the button. Hide it only when the backend says Google isn't configured.
+  const [oauthEnabled, setOauthEnabled] = useState(true);
 
   useEffect(() => {
     // Check if OAuth is configured
     const checkOAuthConfig = async () => {
       try {
         const response = await oauthAPI.getConfig();
-        setOauthEnabled(response.data?.data?.google?.enabled || false);
+        setOauthEnabled(response.data?.data?.google?.enabled !== false);
       } catch (error) {
-        console.error('Failed to fetch OAuth config:', error);
-        setOauthEnabled(false);
+        console.warn('Could not fetch OAuth config; keeping Google button visible:', error.message);
       }
     };
     checkOAuthConfig();
@@ -61,7 +62,8 @@ const GoogleSignInButton = ({
         // Store state in sessionStorage for verification
         try {
           sessionStorage.setItem('oauth_state', response.data.data.state);
-          sessionStorage.setItem('oauth_role', role);
+          if (role) sessionStorage.setItem('oauth_role', role);
+          else sessionStorage.removeItem('oauth_role');
         } catch (storageError) {
           console.warn('Failed to store OAuth state:', storageError);
           // Continue anyway - backend will handle verification
