@@ -16,13 +16,14 @@ const {
 } = require('../services/oauth');
 const { authLimiter } = require('../middleware/rateLimiter');
 const { verifyRecaptchaV2 } = require('../middleware/recaptcha');
+const { getJwtSecret } = require('../config/jwt');
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
 // Generate JWT token
 const generateToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, {
+  return jwt.sign({ userId }, getJwtSecret(), {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   });
 };
@@ -43,7 +44,7 @@ setInterval(() => {
       stateStore.delete(key);
     }
   }
-}, 5 * 60 * 1000);
+}, 5 * 60 * 1000).unref();
 
 // @route   GET /api/oauth/config
 // @desc    Get OAuth provider configuration

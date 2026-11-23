@@ -41,9 +41,9 @@ Add these environment variables in Render dashboard:
 
 #### Required:
 ```
-DATABASE_URL=postgresql://postgres:%21sQ98932k05@db.qxowgfdreqzqtbsoeqlu.supabase.co:5432/postgres
+DATABASE_URL=postgresql://postgres:<YOUR-DB-PASSWORD>@db.<YOUR-PROJECT-REF>.supabase.co:5432/postgres
 
-DIRECT_URL=postgresql://postgres:%21sQ98932k05@db.qxowgfdreqzqtbsoeqlu.supabase.co:5432/postgres
+DIRECT_URL=postgresql://postgres:<YOUR-DB-PASSWORD>@db.<YOUR-PROJECT-REF>.supabase.co:5432/postgres
 
 JWT_SECRET=<generate-random-secret>
 

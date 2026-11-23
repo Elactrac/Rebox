@@ -12,6 +12,7 @@ const {
   authLimiter
 } = require('../middleware/rateLimiter');
 const { verifyRecaptchaV2 } = require('../middleware/recaptcha');
+const { getJwtSecret } = require('../config/jwt');
 
 const router = express.Router();
 
@@ -33,12 +34,7 @@ const loginValidation = [
 
 // Generate JWT token
 const generateToken = (userId) => {
-  const secret = process.env.JWT_SECRET || 'rebox-default-secret-key-2024-change-in-production';
-  if (!secret || secret.trim() === '') {
-    console.error('JWT_SECRET not configured!');
-    throw new Error('JWT configuration error');
-  }
-  return jwt.sign({ userId }, secret, {
+  return jwt.sign({ userId }, getJwtSecret(), {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d'
   });
 };
