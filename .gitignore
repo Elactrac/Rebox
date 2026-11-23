@@ -21,8 +21,7 @@ out/
 *.env.backup*
 *.env.vercel
 
-# Package manager lock files (use one consistently)
-package-lock.json
+# Lock files: the project uses npm; package-lock.json is committed for reproducible builds
 yarn.lock
 pnpm-lock.yaml
 

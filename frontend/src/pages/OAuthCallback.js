@@ -15,8 +15,8 @@ const OAuthCallback = () => {
   const [showRoleSelection, setShowRoleSelection] = useState(false);
   const [userData, setUserData] = useState(null);
   const [authToken, setAuthToken] = useState(null);
-  const [oauthCode, setOauthCode] = useState(null);
-  const [oauthState, setOauthState] = useState(null);
+  const [, setOauthCode] = useState(null);
+  const [, setOauthState] = useState(null);
   const hasProcessed = useRef(false); // Persist across re-renders
 
   useEffect(() => {

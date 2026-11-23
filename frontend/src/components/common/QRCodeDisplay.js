@@ -16,6 +16,7 @@ const QRCodeDisplay = ({
 
   useEffect(() => {
     fetchQRCode();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch only when the target changes
   }, [trackingCode, packageId]);
 
   const fetchQRCode = async () => {
